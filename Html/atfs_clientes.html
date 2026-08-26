@@ -87,7 +87,6 @@
   tbody tr{border-top:1px solid var(--line);cursor:pointer;}
   tbody tr:hover{background:#f8faff;}
   
-  /* Destaca verde pastel para as linhas validadas */
   tbody tr.row-valida {background-color: #eaf8f1;}
   tbody tr.row-valida:hover {background-color: #d8f1e4;}
 
@@ -371,10 +370,18 @@
     setViewMode(viewMode === 'frotas' ? 'divergencias' : 'frotas');
   });
 
+  // Função centralizada para unificar e normalizar os nomes dos clientes
   function normalizarCliente(nome) {
     if (!nome) return '';
     let str = nome.trim().replace(/\s+/g, ' ');
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    
+    // EXCEÇÕES / UNIFICAÇÕES (CNF2 vira AMAZON)
+    if (str === 'CNF2' || str.includes('CNF2')) {
+      return 'AMAZON';
+    }
+    
+    return str;
   }
 
   function escapeHtml(s){
@@ -385,16 +392,20 @@
   function saoClientesEquivalentes(a, b) {
     if (!a || !b) return false;
     
-    if (a.includes(b) || b.includes(a)) return true;
+    const normA = normalizarCliente(a);
+    const normB = normalizarCliente(b);
+    
+    if (normA === normB || normA.includes(normB) || normB.includes(normA)) return true;
     
     const excecoes = [
-      ["THYSSENKRUPP SPRINGS & STABILIZERS BRASIL LTDA", "KRUPP/COSMA"],
-      ["CNF2", "AMAZON"]
+      ["THYSSENKRUPP SPRINGS & STABILIZERS BRASIL LTDA", "KRUPP/COSMA"]
     ];
     
     for (let par of excecoes) {
-      if ((par[0].includes(a) || a.includes(par[0])) && (par[1].includes(b) || b.includes(par[1]))) return true;
-      if ((par[1].includes(a) || a.includes(par[1])) && (par[0].includes(b) || b.includes(par[0]))) return true;
+      const p0 = normalizarCliente(par[0]);
+      const p1 = normalizarCliente(par[1]);
+      if ((p0.includes(normA) || normA.includes(p0)) && (p1.includes(normB) || normB.includes(p1))) return true;
+      if ((p1.includes(normA) || normA.includes(p1)) && (p0.includes(normB) || normB.includes(p0))) return true;
     }
     
     return false;
@@ -488,13 +499,13 @@
 
   function clientesDaLinha(r){
     if(!r || !r.cliente) return [];
+    // Aplica o normalizarCliente em cada item para unificar o CNF2 em AMAZON
     const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean);
     return Array.from(new Set(lista));
   }
 
   function linhaTemCliente(r, cliente){
-    const clienteNorm = normalizarCliente(cliente);
-    return clientesDaLinha(r).some(c => saoClientesEquivalentes(c, clienteNorm));
+    return clientesDaLinha(r).some(c => saoClientesEquivalentes(c, cliente));
   }
 
   function clientesVisiveis(filial){
@@ -552,7 +563,6 @@
     const totalCount = allFrotas.length || 1;
     els.stTotal.textContent = allFrotas.length;
 
-    // Contabilizar as frotas validadas globais para o dashboard
     let validadasCount = 0;
     allFrotas.forEach(r => {
       const arrReg = clientesDaLinha(r);
@@ -563,11 +573,11 @@
         const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
         if (comp) {
           if (comp.tipo !== 'frota_nova') {
-            const relacao = comp.clientesRelacao || [];
+            const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
             isValido = arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
           }
         } else {
-          isValido = true; // Se não tem divergência retornada, está alinhado com a base
+          isValido = true;
         }
       }
       if(isValido) validadasCount++;
@@ -576,7 +586,6 @@
     els.stValidadas.textContent = validadasCount;
     updateBar('barValidadas', validadasCount, totalCount);
 
-    // Gerar Tabela (Listagem)
     els.tbody.innerHTML = rows.map(r => {
       const arrReg = clientesDaLinha(r);
       const clientesNorm = arrReg.join(', ');
@@ -588,14 +597,12 @@
         const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
         if (comp) {
           if (comp.tipo !== 'frota_nova') {
-            const relacao = comp.clientesRelacao || [];
-            clientesValidosStr = Array.from(new Set(relacao.map(normalizarCliente))).join(', ');
+            const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
+            clientesValidosStr = Array.from(new Set(relacao)).join(', ');
             
-            // Verifica se a linha cruza (valida)
-            isValidRow = arrReg.length > 0 && arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, normalizarCliente(val))));
+            isValidRow = arrReg.length > 0 && arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
           }
         } else {
-          // Sem divergências mapeadas (100% OK perante o backend)
           clientesValidosStr = clientesNorm;
           isValidRow = arrReg.length > 0;
         }
@@ -912,14 +919,12 @@
     const divergenciasFiltradas = divergenciasReais.filter(d => {
       if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
 
-      // Foca APENAS nos clientes que são a causa da divergência
       const clientesPendentes = d.tipo === 'frota_nova' 
-        ? (d.clientesAtfs || []).map(normalizarCliente) 
+        ? (d.clientesAtfs || []).map(c => normalizarCliente(c)) 
         : d.clientesFaltandoCorrigido;
 
       if (clienteFilter !== 'TODOS') {
         const clienteNorm = normalizarCliente(clienteFilter);
-        // Aplica a regra de Exceções apenas aos clientes pendentes
         if (!clientesPendentes.some(c => saoClientesEquivalentes(c, clienteNorm))) return false;
       }
 
