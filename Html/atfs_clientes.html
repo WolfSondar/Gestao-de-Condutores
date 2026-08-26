@@ -55,7 +55,9 @@
   .hidden{display:none !important;}
 
   .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
-  .stat{background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;border:1px solid var(--line);position:relative;overflow:hidden;box-shadow:0 12px 30px rgba(15,37,68,.10);}
+  .stat{background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;border:1.5px solid var(--line);position:relative;overflow:hidden;box-shadow:0 12px 30px rgba(15,37,68,.10);cursor:pointer;transition:transform .15s, border-color .15s, box-shadow .15s;}
+  .stat:hover{transform:translateY(-2px);border-color:var(--navy-700);box-shadow:0 16px 36px rgba(15,37,68,.15);}
+  .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.2);background:#f8faff;}
   .stat .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
   .stat .v{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:6px;color:var(--slate-900);}
   
@@ -182,7 +184,6 @@
 </header>
 
 <main>
-  <!-- Skeletons dinâmicos -->
   <div id="emptyState" class="state-msg" style="text-align:left;padding:28px 0;">
     <div class="skel-stats">
       <div class="skel skel-stat"></div>
@@ -203,22 +204,22 @@
 
   <div id="dashboard" class="hidden">
     <section class="stats">
-      <div class="stat total">
+      <div class="stat total" data-filter="all" title="Mostrar todas as frotas">
         <div class="k">Total de frotas</div>
         <div class="v" id="stTotal">0</div>
         <div class="bar"><i></i></div>
       </div>
-      <div class="stat green">
+      <div class="stat green" data-filter="validadas" title="Filtrar frotas com ATFs válidas">
         <div class="k">Frotas c/ ATFs Válidas</div>
         <div class="v" id="stValidadas">0</div>
         <div class="bar"><i id="barValidadas" style="width:0%"></i></div>
       </div>
-      <div class="stat red">
+      <div class="stat red" data-filter="divergencias" title="Filtrar frotas com divergências">
         <div class="k">Divergências</div>
         <div class="v" id="stDivergencias">0</div>
         <div class="bar"><i id="barDivergencias" style="width:0%"></i></div>
       </div>
-      <div class="stat amber">
+      <div class="stat amber" data-filter="novas" title="Filtrar frotas novas">
         <div class="k">Frotas novas</div>
         <div class="v" id="stNovas">0</div>
         <div class="bar"><i id="barNovas" style="width:0%"></i></div>
@@ -263,7 +264,6 @@
   </div>
 </main>
 
-<!-- Modal: editar cliente de frota existente -->
 <div class="modal-backdrop" id="modalEditar">
   <div class="modal-card">
     <div class="modal-head"><h2>Editar cliente da frota</h2><button class="modal-close" data-close>✕</button></div>
@@ -287,7 +287,6 @@
   </div>
 </div>
 
-<!-- Modal: nova frota -->
 <div class="modal-backdrop" id="modalNova">
   <div class="modal-card">
     <div class="modal-head"><h2>Nova frota</h2><button class="modal-close" data-close>✕</button></div>
@@ -348,6 +347,7 @@
   let ultimaComparacao = null;
   let viewMode = 'divergencias';
   let initialTagsStr = '';
+  let activeCardFilter = ''; // Filtro ativo dos cards topo: '', 'validadas', 'divergencias', 'novas'
 
   function setViewMode(mode) {
     viewMode = mode;
@@ -370,13 +370,11 @@
     setViewMode(viewMode === 'frotas' ? 'divergencias' : 'frotas');
   });
 
-  // Função centralizada para unificar e normalizar os nomes dos clientes
   function normalizarCliente(nome) {
     if (!nome) return '';
     let str = nome.trim().replace(/\s+/g, ' ');
     str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
     
-    // EXCEÇÕES / UNIFICAÇÕES (CNF2 vira AMAZON)
     if (str === 'CNF2' || str.includes('CNF2')) {
       return 'AMAZON';
     }
@@ -463,7 +461,7 @@
     }catch(err){
       setStatus('err', 'Erro de conexão');
       els.empty.classList.add('hidden');
-      els.error.classList.remove('hidden');
+      els.error.classList.add('hidden');
       els.errorDetail.textContent = err.message;
     }
   }
@@ -499,7 +497,6 @@
 
   function clientesDaLinha(r){
     if(!r || !r.cliente) return [];
-    // Aplica o normalizarCliente em cada item para unificar o CNF2 em AMAZON
     const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean);
     return Array.from(new Set(lista));
   }
@@ -542,12 +539,33 @@
     const filial = els.filterFilial.value;
     const cliente = els.filterCliente.value;
     const q = els.search.value.trim().toLowerCase();
+    
     return allFrotas.filter(r=>{
       if(filial !== 'TODOS' && r.filial !== filial) return false;
       if(cliente !== 'TODOS' && !linhaTemCliente(r, cliente)) return false;
       
       const clientesStr = clientesDaLinha(r).join(', ').toLowerCase();
       if(q && !(r.frota.toLowerCase().includes(q) || clientesStr.includes(q) || (r.cliente||'').toLowerCase().includes(q))) return false;
+      
+      // Filtro adicional quando o card "Frotas c/ ATFs Válidas" estiver ativo
+      if (activeCardFilter === 'validadas') {
+        const arrReg = clientesDaLinha(r);
+        if(arrReg.length === 0) return false;
+        let isValido = false;
+        if (ultimaComparacao) {
+          const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
+          if (comp) {
+            if (comp.tipo !== 'frota_nova') {
+              const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
+              isValido = arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
+            }
+          } else {
+            isValido = true;
+          }
+        }
+        if (!isValido) return false;
+      }
+
       return true;
     });
   }
@@ -558,7 +576,19 @@
     if(el) el.style.width = pct + '%';
   }
 
+  function syncActiveCards() {
+    document.querySelectorAll('.stat').forEach(el => {
+      const f = el.dataset.filter;
+      if (f === activeCardFilter && activeCardFilter !== '') {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
   function render(){
+    syncActiveCards();
     const rows = frotasFiltradas();
     const totalCount = allFrotas.length || 1;
     els.stTotal.textContent = allFrotas.length;
@@ -919,8 +949,12 @@
     const divergenciasFiltradas = divergenciasReais.filter(d => {
       if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
 
+      // Filtro por card clicado no topo
+      if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false;
+      if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
+
       const clientesPendentes = d.tipo === 'frota_nova' 
-        ? (d.clientesAtfs || []).map(c => normalizarCliente(c)) 
+        ? (d.clientesAtfs || []).map(normalizarCliente) 
         : d.clientesFaltandoCorrigido;
 
       if (clienteFilter !== 'TODOS') {
@@ -937,14 +971,15 @@
       return true;
     });
 
-    const novasCount = divergenciasFiltradas.filter(d => d.tipo === 'frota_nova').length;
-    const divCount = divergenciasFiltradas.length;
+    // Contadores para os cards globais
+    const totalDivs = divergenciasReais.filter(d => d.tipo !== 'frota_nova').length;
+    const totalNovas = divergenciasReais.filter(d => d.tipo === 'frota_nova').length;
 
-    els.stNovas.textContent = novasCount;
-    els.stDivergencias.textContent = divCount;
+    els.stNovas.textContent = totalNovas;
+    els.stDivergencias.textContent = totalDivs;
 
-    updateBar('barNovas', novasCount, totalCount);
-    updateBar('barDivergencias', divCount, totalCount);
+    updateBar('barNovas', totalNovas, totalCount);
+    updateBar('barDivergencias', totalDivs, totalCount);
 
     if (divergenciasReais.length === 0) {
       els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
@@ -961,7 +996,7 @@
         const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
         return `<div class="div-item novo">
           <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
-         <div class="detalhe">Não existe na Relação de Frota: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
+          <div class="detalhe">Não existe na Relação de Frota: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
         </div>`;
       }
       
@@ -972,6 +1007,29 @@
       </div>`;
     }).join('');
   }
+
+  // ---------------- Clique nos Cards do Topo (Filtros Interativos) ----------------
+  document.querySelectorAll('.stat[data-filter]').forEach(card => {
+    card.addEventListener('click', () => {
+      const filterType = card.dataset.filter;
+      
+      // Se clicar no mesmo card ativo, desativa (toggle)
+      if (activeCardFilter === filterType || filterType === 'all') {
+        activeCardFilter = '';
+      } else {
+        activeCardFilter = filterType;
+      }
+
+      // Redireciona para a aba correspondente ao filtro
+      if (activeCardFilter === 'validadas') {
+        setViewMode('frotas');
+      } else if (activeCardFilter === 'divergencias' || activeCardFilter === 'novas') {
+        setViewMode('divergencias');
+      }
+
+      render();
+    });
+  });
 
   els.filterFilial.addEventListener('change', () => { refreshFilterOptions(); render(); });
   els.filterCliente.addEventListener('change', () => { refreshFilterOptions(); render(); });
