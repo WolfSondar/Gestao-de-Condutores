@@ -961,7 +961,7 @@
         const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
         return `<div class="div-item novo">
           <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
-          <div class="detalhe">Não existe a frota ${escapeHtml(d.frota)} na Relação de Frota, Cliente(s): ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
+         <div class="detalhe">Não existe na Relação de Frota: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
         </div>`;
       }
       
