@@ -204,7 +204,7 @@
 
   <div id="dashboard" class="hidden">
     <section class="stats">
-      <div class="stat total" data-filter="all" title="Mostrar todas as frotas">
+      <div class="stat total active" data-filter="all" title="Mostrar todas as frotas">
         <div class="k">Total de frotas</div>
         <div class="v" id="stTotal">0</div>
         <div class="bar"><i></i></div>
@@ -347,17 +347,15 @@
   let ultimaComparacao = null;
   let viewMode = 'divergencias';
   let initialTagsStr = '';
-  let activeCardFilter = ''; // Filtro ativo dos cards topo: '', 'validadas', 'divergencias', 'novas'
+  let activeCardFilter = 'all'; // 'all' vem selecionado por padrão
 
   function setViewMode(mode) {
     viewMode = mode;
     if (mode === 'frotas') {
       els.tableWrap.classList.remove('hidden');
       els.panelDivergencias.classList.add('hidden');
-      if (ultimaComparacao) {
-        els.btnToggleView.textContent = 'Ver Divergências';
-        els.btnToggleView.style.display = 'inline-block';
-      }
+      els.btnToggleView.textContent = 'Ver Divergências';
+      els.btnToggleView.style.display = 'inline-block';
     } else {
       els.tableWrap.classList.add('hidden');
       els.panelDivergencias.classList.remove('hidden');
@@ -367,7 +365,16 @@
   }
 
   els.btnToggleView.addEventListener('click', () => {
-    setViewMode(viewMode === 'frotas' ? 'divergencias' : 'frotas');
+    if (viewMode === 'frotas') {
+      // Ao mudar para Divergências, reseta para mostrar todas as frotas e vai para o painel
+      activeCardFilter = 'all';
+      setViewMode('divergencias');
+    } else {
+      // Ao mudar para Lista de Frotas, exibe todas as frotas filtradas automaticamente
+      activeCardFilter = 'all';
+      setViewMode('frotas');
+    }
+    render();
   });
 
   function normalizarCliente(nome) {
@@ -461,7 +468,7 @@
     }catch(err){
       setStatus('err', 'Erro de conexão');
       els.empty.classList.add('hidden');
-      els.error.classList.add('hidden');
+      els.error.classList.remove('hidden');
       els.errorDetail.textContent = err.message;
     }
   }
@@ -579,7 +586,7 @@
   function syncActiveCards() {
     document.querySelectorAll('.stat').forEach(el => {
       const f = el.dataset.filter;
-      if (f === activeCardFilter && activeCardFilter !== '') {
+      if (f === activeCardFilter) {
         el.classList.add('active');
       } else {
         el.classList.remove('active');
@@ -913,6 +920,7 @@
     try{
       const r = await apiGet('comparar');
       ultimaComparacao = r.divergencias;
+      activeCardFilter = 'all';
       setViewMode('divergencias'); 
       render();
     }catch(err){
@@ -971,7 +979,6 @@
       return true;
     });
 
-    // Contadores para os cards globais
     const totalDivs = divergenciasReais.filter(d => d.tipo !== 'frota_nova').length;
     const totalNovas = divergenciasReais.filter(d => d.tipo === 'frota_nova').length;
 
@@ -1013,17 +1020,19 @@
     card.addEventListener('click', () => {
       const filterType = card.dataset.filter;
       
-      // Se clicar no mesmo card ativo, desativa (toggle)
-      if (activeCardFilter === filterType || filterType === 'all') {
-        activeCardFilter = '';
+      // Se clicar no mesmo card ativo, reseta para 'all' (Total de frotas)
+      if (activeCardFilter === filterType) {
+        activeCardFilter = 'all';
       } else {
         activeCardFilter = filterType;
       }
 
-      // Redireciona para a aba correspondente ao filtro
+      // Direciona para a view correta
       if (activeCardFilter === 'validadas') {
         setViewMode('frotas');
-      } else if (activeCardFilter === 'divergencias' || activeCardFilter === 'novas') {
+      } else if (activeCardFilter === 'all') {
+        setViewMode('frotas');
+      } else {
         setViewMode('divergencias');
       }
 
