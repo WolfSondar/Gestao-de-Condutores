@@ -1480,14 +1480,20 @@ if(dtRel){
     } else if(dtRel.getTime() > condutor.derVal.getTime()){
       motivos.push({tipo:'validade', label:'Validade divergente', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
     }
-  } else if(condutor.derStatus !== 'AGUARDANDO'){
-    // Painel não tem nenhuma validade cadastrada pra esse condutor e ele não
-    // está aguardando confirmação do DER. Se o relatório trouxer uma validade
-    // ainda em dia (>= hoje), é sinal de que o cadastro no painel está
-    // incompleto — o DER já tem validade válida que não foi lançada no sistema.
+  } else {
+    // Painel sem nenhuma data cadastrada pra esse condutor — seja porque
+    // está aguardando confirmação do DER, seja por qualquer outro motivo.
+    // Só sinaliza quando o relatório já traz uma validade em dia (hoje ou
+    // no futuro): isso indica que o processo no DER já foi concluído (ou
+    // nunca esteve pendente de verdade) e o painel é que ficou desatualizado.
+    // Uma validade já vencida no relatório não gera aviso, porque nesse caso
+    // ainda faz sentido estar sem data enquanto se aguarda o novo documento.
     const hoje = new Date(); hoje.setHours(0,0,0,0);
     if(dtRel.getTime() >= hoje.getTime()){
-      motivos.push({tipo:'validade', label:'Validade ausente no painel', detalhe:`relatório ${rel.validade} · painel sem data cadastrada`});
+      const label = condutor.derStatus === 'AGUARDANDO'
+        ? 'Aguardando DER, mas relatório já tem validade'
+        : 'Validade ausente no painel';
+      motivos.push({tipo:'validade', label, detalhe:`relatório ${rel.validade} · painel sem data cadastrada`});
     }
   }
 }
