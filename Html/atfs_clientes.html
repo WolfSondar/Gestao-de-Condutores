@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes por Frota — ATF's</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#0a1930; --navy-900:#0f2544; --navy-800:#16335f; --navy-700:#1e4278;
+    --amber:#f2a93b; --amber-soft:#fdf1dd;
+    --green:#2bad7d; --green-soft:#e4f7ef;
+    --red:#e5484d; --red-soft:#fde9ea;
+    --slate-900:#1b2433; --slate-600:#5b6577; --slate-400:#93a0b3;
+    --line:#e4e8f0; --bg:#f4f6fb; --card:#ffffff; --radius:14px;
+    --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--slate-900);font-family:var(--font-body);-webkit-font-smoothing:antialiased;}
+
+  .road{position:relative;background:linear-gradient(120deg,var(--navy-950),var(--navy-900) 55%,var(--navy-800));color:#fff;padding:34px 40px 30px;overflow:hidden;}
+  .road::after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background-image:repeating-linear-gradient(90deg,var(--amber) 0 34px, transparent 34px 60px);opacity:.9;}
+  .road-top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap;}
+  .road-title h1{font-family:var(--font-display);font-size:28px;margin:0 0 4px;letter-spacing:.2px;}
+  .road-title p{margin:0;color:var(--slate-400);font-size:14px;}
+  .road-title .eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:8px;display:block;}
+  .road-status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--slate-400);flex-wrap:wrap;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(43,173,125,.2);}
+  .dot.off{background:var(--slate-400);box-shadow:none;}
+  .dot.err{background:var(--red);box-shadow:0 0 0 4px rgba(229,72,77,.2);}
+
+  #filterFilial,#filterCliente{background:var(--navy-800);color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:9px;padding:8px 12px;font-size:13px;font-family:var(--font-body);cursor:pointer;}
+  #filterFilial:hover,#filterCliente:hover{border-color:rgba(255,255,255,.55);}
+  #filterFilial option,#filterCliente option{background:#fff;color:var(--slate-900);}
+
+  /* Skeleton Loading */
+  @keyframes shimmer{
+    0%{background-position:-400px 0;}
+    100%{background-position:400px 0;}
+  }
+  .skel{
+    background:linear-gradient(90deg,#e9edf5 25%,#f5f7fb 37%,#e9edf5 63%);
+    background-size:800px 100%;
+    animation:shimmer 1.4s linear infinite;
+    border-radius:8px;
+  }
+  .skel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .skel-stat{height:104px;border-radius:var(--radius);}
+  .skel-row{height:44px;border-radius:8px;margin-bottom:8px;}
+
+  main{max-width:1320px;margin:0 auto;padding:28px 40px 60px;}
+  .state-msg{text-align:center;padding:60px 20px;color:var(--slate-600);font-size:14px;}
+  .state-msg strong{display:block;font-family:var(--font-display);font-size:18px;color:var(--slate-900);margin-bottom:8px;}
+  .hidden{display:none !important;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
+  .stat{background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;border:1px solid var(--line);position:relative;overflow:hidden;box-shadow:0 12px 30px rgba(15,37,68,.10);}
+  .stat .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
+  .stat .v{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:6px;color:var(--slate-900);}
+  
+  /* Progress Bars */
+  .stat .bar {height:4px;border-radius:2px;background:var(--line);margin-top:10px;overflow:hidden;}
+  .stat .bar i {display:block;height:100%;border-radius:2px;transition:width 0.3s ease;}
+  .stat.total .bar i {background:var(--navy-700);width:100%;}
+  .stat.green .v {color:var(--green);} .stat.green .bar i {background:var(--green);}
+  .stat.red .v {color:var(--red);} .stat.red .bar i {background:var(--red);}
+  .stat.amber .v {color:#c07f16;} .stat.amber .bar i {background:var(--amber);}
+
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .search-wrap{position:relative;flex:1;min-width:220px;}
+  .search-wrap input[type="text"]{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:10px 34px 10px 14px;font-size:13px;font-family:var(--font-body);outline:none;box-sizing:border-box;}
+  .search-wrap input[type="text"]:focus{border-color:var(--navy-700);}
+  .btn{border:none;border-radius:9px;padding:10px 18px;font-weight:600;font-size:13px;cursor:pointer;font-family:var(--font-body);transition:transform .1s, box-shadow .15s;white-space:nowrap;}
+  .btn:active{transform:scale(.97);}
+  .btn-primary{background:var(--navy-700);color:#fff;}
+  .btn-primary:hover{background:var(--navy-900);}
+  .btn-ghost{background:transparent;color:var(--slate-600);border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--navy-700);color:var(--navy-900);}
+  .btn-danger{background:var(--red-soft);color:var(--red);}
+  .btn-danger:hover{background:var(--red);color:#fff;}
+  .btn-toggle-view{background:#eef1f7; color:var(--navy-800); border:1.5px solid var(--navy-800);}
+
+  .table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:26px;}
+  table{width:100%;min-width:860px;border-collapse:collapse;font-size:13px;}
+  thead th{text-align:left;padding:12px 14px;background:var(--navy-950);color:var(--slate-400);font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;white-space:nowrap;}
+  tbody tr{border-top:1px solid var(--line);cursor:pointer;}
+  tbody tr:hover{background:#f8faff;}
+  
+  /* Destaca verde pastel para as linhas validadas */
+  tbody tr.row-valida {background-color: #eaf8f1;}
+  tbody tr.row-valida:hover {background-color: #d8f1e4;}
+
+  td{padding:11px 14px;color:var(--slate-900);vertical-align:top;}
+  td.frota{font-weight:700;font-family:var(--font-mono);white-space:nowrap;}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .badge.outro{background:#eef1f7;color:var(--slate-600);}
+  .badge.red{background:var(--red-soft);color:var(--red);}
+  .badge.amber{background:var(--amber-soft);color:#c07f16;}
+  tfoot td{padding:14px;text-align:center;color:var(--slate-400);font-size:12px;}
+
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:26px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .panel h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;}
+  .panel .sub{font-size:12px;color:var(--slate-600);margin:0;}
+  .div-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
+  .div-item.novo{border-left:4px solid var(--amber);}
+  .div-item.dif{border-left:4px solid var(--red);}
+  .div-item .row1{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+  .div-item .frota-tag{font-family:var(--font-mono);font-weight:700;}
+  .div-item .detalhe{color:var(--slate-600);font-size:12.5px;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(10,25,48,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal-backdrop.open{display:flex;}
+  .modal-card{background:#fff;border-radius:var(--radius);max-width:480px;width:100%;max-height:92vh;overflow:hidden;box-shadow:0 24px 60px rgba(10,25,48,.35);display:flex;flex-direction:column;}
+  .modal-head{background:var(--navy-900);color:#fff;padding:16px 22px;border-radius:var(--radius) var(--radius) 0 0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex:none;}
+  .modal-head h2{font-family:var(--font-display);margin:0;font-size:17px;}
+  .modal-close{background:rgba(255,255,255,.12);border:none;color:#fff;width:26px;height:26px;border-radius:50%;font-size:14px;cursor:pointer;flex:none;}
+  .modal-close:hover{background:rgba(255,255,255,.24);}
+  .modal-body{padding:20px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--slate-600);}
+  .field select, .field input[type="text"], .field textarea{border:1.5px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13px;font-family:var(--font-body);outline:none;}
+  .field select:focus, .field input:focus, .field textarea:focus{border-color:var(--navy-700);}
+  .field .hint{font-size:11.5px;color:var(--slate-400);}
+  
+  /* Sistema de Tags (Chips) */
+  .tags-input {
+    border: 1.5px solid var(--line); border-radius: 9px; padding: 6px 8px; font-size: 13px; 
+    font-family: var(--font-body); display: flex; flex-wrap: wrap; gap: 6px; position: relative; 
+    background: #fff; min-height: 42px; align-items: center;
+  }
+  .tags-input:focus-within { border-color: var(--navy-700); }
+  .tag-chip {
+    background: var(--navy-800); color: #fff; padding: 4px 8px; border-radius: 6px; 
+    display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; font-family: var(--font-mono);
+  }
+  .tag-remove {
+    background: rgba(255,255,255,.2); border: none; border-radius: 4px; color: #fff; cursor: pointer; 
+    width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; 
+    font-size: 14px; line-height: 1; margin-left: 2px;
+  }
+  .tag-remove:hover { background: rgba(255,255,255,.4); }
+  .tags-input input {
+    border: none !important; outline: none !important; flex: 1; min-width: 120px; padding: 4px 6px; 
+    font-size: 13px; font-family: var(--font-body); background: transparent;
+  }
+  .tag-suggestions {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: #fff; border: 1px solid var(--line); 
+    border-radius: 8px; box-shadow: 0 12px 24px rgba(10,25,48,.15); max-height: 160px; overflow-y: auto; 
+    z-index: 100; display: none;
+  }
+  .tag-suggestions.show { display: block; }
+  .tag-suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 13px; color: var(--slate-900); }
+  .tag-suggestion-item:hover { background: #f8faff; color: var(--navy-700); font-weight: 500; }
+
+  .modal-foot{display:flex;justify-content:space-between;gap:10px;padding:16px 22px;border-top:1px solid var(--line);}
+  .modal-msg{font-size:12.5px;padding:8px 10px;border-radius:8px;display:none;}
+  .modal-msg.show{display:block;}
+  .modal-msg.ok{background:var(--green-soft);color:var(--green);}
+  .modal-msg.err{background:var(--red-soft);color:var(--red);}
+
+  @media (max-width:1100px){ .stats,.skel-stats{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:700px){ .road{padding:26px 20px 26px;} main{padding:22px 16px 50px;} .stats,.skel-stats{grid-template-columns:repeat(1,1fr);} }
+</style>
+</head>
+<body>
+
+<header class="road">
+  <div class="road-top">
+    <div class="road-title">
+      <span class="eyebrow">Viação · Clientes por Frota</span>
+      <h1>Painel de Clientes das ATF's</h1>
+    </div>
+    <div class="road-status">
+      <span class="dot off" id="statusDot"></span>
+      <span id="statusText">Aguardando conexão…</span>
+      <select id="filterFilial"><option value="TODOS">Todas as filiais</option></select>
+      <select id="filterCliente"><option value="TODOS">Todos os clientes</option></select>
+      <button class="btn btn-ghost" id="btnRefresh" style="border-color:rgba(255,255,255,.25);color:#fff;">Atualizar agora</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Skeletons dinâmicos -->
+  <div id="emptyState" class="state-msg" style="text-align:left;padding:28px 0;">
+    <div class="skel-stats">
+      <div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div>
+      <div class="skel skel-stat"></div>
+    </div>
+    <div class="skel skel-row" style="width:100%;height:44px;"></div>
+    <div class="skel skel-row" style="width:100%;"></div>
+    <div class="skel skel-row" style="width:100%;"></div>
+    <div class="skel skel-row" style="width:70%;"></div>
+  </div>
+
+  <div id="errorState" class="state-msg hidden">
+    <strong>Não foi possível ler a planilha</strong>
+    <span id="errorDetail">Verifique a URL do Apps Script e o token configurados no início do script.</span>
+  </div>
+
+  <div id="dashboard" class="hidden">
+    <section class="stats">
+      <div class="stat total">
+        <div class="k">Total de frotas</div>
+        <div class="v" id="stTotal">0</div>
+        <div class="bar"><i></i></div>
+      </div>
+      <div class="stat green">
+        <div class="k">Frotas c/ ATFs Válidas</div>
+        <div class="v" id="stValidadas">0</div>
+        <div class="bar"><i id="barValidadas" style="width:0%"></i></div>
+      </div>
+      <div class="stat red">
+        <div class="k">Divergências</div>
+        <div class="v" id="stDivergencias">0</div>
+        <div class="bar"><i id="barDivergencias" style="width:0%"></i></div>
+      </div>
+      <div class="stat amber">
+        <div class="k">Frotas novas</div>
+        <div class="v" id="stNovas">0</div>
+        <div class="bar"><i id="barNovas" style="width:0%"></i></div>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Buscar por frota ou cliente…">
+      </div>
+      <button class="btn btn-primary" id="btnEditar">Editar cliente da frota</button>
+      <button class="btn btn-ghost" id="btnNova">+ Nova frota</button>
+      <button class="btn btn-ghost" id="btnComparar">Verificar divergências</button>
+      
+      <button class="btn btn-ghost btn-toggle-view" id="btnToggleView" style="display:none;">Ver Lista de Frotas</button>
+    </div>
+
+    <div class="table-wrap hidden" id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Frota</th>
+            <th>Filial</th>
+            <th>Cliente(s) Cadastrados</th>
+            <th>Clientes Válidos (Rel. Frota)</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot><tr><td colspan="4" id="tfootMsg"></td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="panel" id="panelDivergencias">
+      <div class="panel-head">
+        <div>
+          <h3>Divergências com a Relação de Frota</h3>
+          <p class="sub">Comparação priorizando as atualizações da planilha ATFS frente à aba "ATF's" da RELAÇÃO DE FROTA VMG 2026</p>
+        </div>
+      </div>
+      <div id="divList"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Modal: editar cliente de frota existente -->
+<div class="modal-backdrop" id="modalEditar">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Editar cliente da frota</h2><button class="modal-close" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Filial</label><select id="edFilial"></select></div>
+      <div class="field"><label>Frota</label><select id="edFrota"></select></div>
+      <div class="field">
+        <label>Cliente(s)</label>
+        <div class="tags-input" id="edTagsContainer">
+          <input type="text" id="edTagInput" placeholder="Adicionar cliente...">
+          <div id="edTagSuggestions" class="tag-suggestions"></div>
+        </div>
+        <span class="hint">Digite e selecione na lista. Deixe vazio para remover todos os clientes.</span>
+      </div>
+      <div class="modal-msg" id="edMsg"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="edExcluirFrota">Excluir frota</button>
+      <button class="btn btn-primary" id="edSalvar" style="display:none;">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: nova frota -->
+<div class="modal-backdrop" id="modalNova">
+  <div class="modal-card">
+    <div class="modal-head"><h2>Nova frota</h2><button class="modal-close" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Filial</label><select id="nvFilial"></select></div>
+      <div class="field"><label>Número da frota</label><input type="text" id="nvFrota" placeholder="Ex: 1035"></div>
+      <div class="field">
+        <label>Cliente(s)</label>
+        <div class="tags-input" id="nvTagsContainer">
+          <input type="text" id="nvTagInput" placeholder="Adicionar cliente...">
+          <div id="nvTagSuggestions" class="tag-suggestions"></div>
+        </div>
+        <span class="hint">Digite e selecione na lista.</span>
+      </div>
+      <div class="modal-msg" id="nvMsg"></div>
+    </div>
+    <div class="modal-foot" style="justify-content:flex-end;">
+      <button class="btn btn-primary" id="nvSalvar">Criar frota</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ============== CONFIGURAÇÃO — preencha após publicar o Apps Script ==============
+  const API_URL = 'https://script.google.com/macros/s/AKfycbyN8zZBSelXHruoKjMisIAQNrmH8DCPp8_01qdGosUhx11fki3hyDQKzqO80e64Y13LLA/exec';
+  const TOKEN = 'TROQUE-ESTA-CHAVE-SECRETA';
+  // ====================================================================================
+
+  const els = {
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
+    empty: document.getElementById('emptyState'),
+    error: document.getElementById('errorState'),
+    errorDetail: document.getElementById('errorDetail'),
+    dash: document.getElementById('dashboard'),
+    filterFilial: document.getElementById('filterFilial'),
+    filterCliente: document.getElementById('filterCliente'),
+    search: document.getElementById('search'),
+    tableWrap: document.getElementById('tableWrap'),
+    tbody: document.getElementById('tbody'),
+    tfootMsg: document.getElementById('tfootMsg'),
+    btnRefresh: document.getElementById('btnRefresh'),
+    btnEditar: document.getElementById('btnEditar'),
+    btnNova: document.getElementById('btnNova'),
+    btnComparar: document.getElementById('btnComparar'),
+    btnToggleView: document.getElementById('btnToggleView'),
+    panelDivergencias: document.getElementById('panelDivergencias'),
+    divList: document.getElementById('divList'),
+    stTotal: document.getElementById('stTotal'),
+    stValidadas: document.getElementById('stValidadas'),
+    stDivergencias: document.getElementById('stDivergencias'),
+    stNovas: document.getElementById('stNovas'),
+  };
+
+  let allFrotas = [];
+  let filiais = [];
+  let ultimaComparacao = null;
+  let viewMode = 'divergencias';
+  let initialTagsStr = '';
+
+  function setViewMode(mode) {
+    viewMode = mode;
+    if (mode === 'frotas') {
+      els.tableWrap.classList.remove('hidden');
+      els.panelDivergencias.classList.add('hidden');
+      if (ultimaComparacao) {
+        els.btnToggleView.textContent = 'Ver Divergências';
+        els.btnToggleView.style.display = 'inline-block';
+      }
+    } else {
+      els.tableWrap.classList.add('hidden');
+      els.panelDivergencias.classList.remove('hidden');
+      els.btnToggleView.textContent = 'Ver Lista de Frotas';
+      els.btnToggleView.style.display = 'inline-block';
+    }
+  }
+
+  els.btnToggleView.addEventListener('click', () => {
+    setViewMode(viewMode === 'frotas' ? 'divergencias' : 'frotas');
+  });
+
+  function normalizarCliente(nome) {
+    if (!nome) return '';
+    let str = nome.trim().replace(/\s+/g, ' ');
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  }
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // --- REGRA DE EXCEÇÃO INTELIGENTE (SINÔNIMOS) ---
+  function saoClientesEquivalentes(a, b) {
+    if (!a || !b) return false;
+    
+    if (a.includes(b) || b.includes(a)) return true;
+    
+    const excecoes = [
+      ["THYSSENKRUPP SPRINGS & STABILIZERS BRASIL LTDA", "KRUPP/COSMA"]
+    ];
+    
+    for (let par of excecoes) {
+      if ((par[0].includes(a) || a.includes(par[0])) && (par[1].includes(b) || b.includes(par[1]))) return true;
+      if ((par[1].includes(a) || a.includes(par[1])) && (par[0].includes(b) || b.includes(par[0]))) return true;
+    }
+    
+    return false;
+  }
+
+  async function apiGet(action, extraParams){
+    const p = new URLSearchParams(Object.assign({ action, token: TOKEN }, extraParams || {}));
+    const res = await fetch(API_URL + '?' + p.toString());
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.message || 'Erro desconhecido');
+    return data;
+  }
+
+  async function apiPost(body){
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ token: TOKEN }, body))
+    });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.message || 'Erro desconhecido');
+    return data;
+  }
+
+  function setStatus(state, text){
+    els.statusDot.className = 'dot' + (state === 'ok' ? '' : state === 'err' ? ' err' : ' off');
+    els.statusText.textContent = text;
+  }
+
+  async function loadData(){
+    setStatus('', 'Conectando…');
+    els.empty.classList.remove('hidden');
+    els.error.classList.add('hidden');
+    els.dash.classList.add('hidden');
+    try{
+      const [rFiliais, rFrotas, rComp] = await Promise.all([
+        apiGet('filiais'), 
+        apiGet('frotas', { filial: 'TODOS' }),
+        apiGet('comparar')
+      ]);
+
+      filiais = rFiliais.filiais;
+      allFrotas = rFrotas.frotas;
+      ultimaComparacao = rComp.divergencias;
+
+      populaFiliaisSelects();
+      refreshFilterOptions();
+      setStatus('ok', 'Conectado');
+      
+      els.empty.classList.add('hidden');
+      els.dash.classList.remove('hidden');
+      
+      setViewMode('divergencias');
+      render();
+    }catch(err){
+      setStatus('err', 'Erro de conexão');
+      els.empty.classList.add('hidden');
+      els.error.classList.remove('hidden');
+      els.errorDetail.textContent = err.message;
+    }
+  }
+
+  async function refreshDataSilent(){
+    try{
+      setStatus('', 'Atualizando dados…');
+      const [rFiliais, rFrotas, rComp] = await Promise.all([
+        apiGet('filiais'), 
+        apiGet('frotas', { filial: 'TODOS' }),
+        apiGet('comparar')
+      ]);
+
+      filiais = rFiliais.filiais;
+      allFrotas = rFrotas.frotas;
+      ultimaComparacao = rComp.divergencias;
+
+      populaFiliaisSelects();
+      refreshFilterOptions();
+      setStatus('ok', 'Conectado');
+      render();
+    }catch(err){
+      setStatus('err', 'Erro na sincronização');
+    }
+  }
+
+  function populaFiliaisSelects(){
+    const opts = filiais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+    els.filterFilial.innerHTML = '<option value="TODOS">Todas as filiais</option>' + opts;
+    document.getElementById('edFilial').innerHTML = opts;
+    document.getElementById('nvFilial').innerHTML = opts;
+  }
+
+  function clientesDaLinha(r){
+    if(!r || !r.cliente) return [];
+    const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean);
+    return Array.from(new Set(lista));
+  }
+
+  function linhaTemCliente(r, cliente){
+    const clienteNorm = normalizarCliente(cliente);
+    return clientesDaLinha(r).some(c => saoClientesEquivalentes(c, clienteNorm));
+  }
+
+  function clientesVisiveis(filial){
+    const rows = filial === 'TODOS' ? allFrotas : allFrotas.filter(r => r.filial === filial);
+    const set = new Set();
+    rows.forEach(r => clientesDaLinha(r).forEach(c => set.add(c)));
+    return Array.from(set).sort((a,b) => a.localeCompare(b, 'pt-BR'));
+  }
+
+  function filiaisVisiveis(cliente){
+    if(cliente === 'TODOS') return filiais.slice();
+    const set = new Set();
+    allFrotas.forEach(r => { if(linhaTemCliente(r, cliente)) set.add(r.filial); });
+    return filiais.filter(f => set.has(f));
+  }
+
+  function refreshFilterOptions(){
+    const filialAtual = els.filterFilial.value || 'TODOS';
+    const clienteAtual = els.filterCliente.value || 'TODOS';
+
+    const opcoesFiliais = filiaisVisiveis(clienteAtual);
+    const opcoesClientes = clientesVisiveis(filialAtual);
+
+    els.filterFilial.innerHTML = '<option value="TODOS">Todas as filiais</option>' +
+      opcoesFiliais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+    els.filterCliente.innerHTML = '<option value="TODOS">Todos os clientes</option>' +
+      opcoesClientes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+
+    els.filterFilial.value = opcoesFiliais.includes(filialAtual) ? filialAtual : 'TODOS';
+    els.filterCliente.value = opcoesClientes.includes(clienteAtual) ? clienteAtual : 'TODOS';
+  }
+
+  function frotasFiltradas(){
+    const filial = els.filterFilial.value;
+    const cliente = els.filterCliente.value;
+    const q = els.search.value.trim().toLowerCase();
+    return allFrotas.filter(r=>{
+      if(filial !== 'TODOS' && r.filial !== filial) return false;
+      if(cliente !== 'TODOS' && !linhaTemCliente(r, cliente)) return false;
+      
+      const clientesStr = clientesDaLinha(r).join(', ').toLowerCase();
+      if(q && !(r.frota.toLowerCase().includes(q) || clientesStr.includes(q) || (r.cliente||'').toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }
+
+  function updateBar(id, value, max) {
+    const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
+    const el = document.getElementById(id);
+    if(el) el.style.width = pct + '%';
+  }
+
+  function render(){
+    const rows = frotasFiltradas();
+    const totalCount = allFrotas.length || 1;
+    els.stTotal.textContent = allFrotas.length;
+
+    // Contabilizar as frotas validadas globais para o dashboard
+    let validadasCount = 0;
+    allFrotas.forEach(r => {
+      const arrReg = clientesDaLinha(r);
+      if(arrReg.length === 0) return;
+      
+      let isValido = false;
+      if (ultimaComparacao) {
+        const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
+        if (comp) {
+          if (comp.tipo !== 'frota_nova') {
+            const relacao = comp.clientesRelacao || [];
+            isValido = arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
+          }
+        } else {
+          isValido = true; // Se não tem divergência retornada, está alinhado com a base
+        }
+      }
+      if(isValido) validadasCount++;
+    });
+
+    els.stValidadas.textContent = validadasCount;
+    updateBar('barValidadas', validadasCount, totalCount);
+
+    // Gerar Tabela (Listagem)
+    els.tbody.innerHTML = rows.map(r => {
+      const arrReg = clientesDaLinha(r);
+      const clientesNorm = arrReg.join(', ');
+      
+      let clientesValidosStr = '';
+      let isValidRow = false;
+
+      if (ultimaComparacao) {
+        const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
+        if (comp) {
+          if (comp.tipo !== 'frota_nova') {
+            const relacao = comp.clientesRelacao || [];
+            clientesValidosStr = Array.from(new Set(relacao.map(normalizarCliente))).join(', ');
+            
+            // Verifica se a linha cruza (valida)
+            isValidRow = arrReg.length > 0 && arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, normalizarCliente(val))));
+          }
+        } else {
+          // Sem divergências mapeadas (100% OK perante o backend)
+          clientesValidosStr = clientesNorm;
+          isValidRow = arrReg.length > 0;
+        }
+      }
+
+      const tdValidos = clientesValidosStr 
+        ? escapeHtml(clientesValidosStr) 
+        : '<span class="badge red">Nenhum ativo</span>';
+
+      const rowClass = isValidRow ? 'class="row-valida"' : '';
+
+      return `
+      <tr ${rowClass} data-editar="${escapeHtml(r.filial)}|${escapeHtml(r.frota)}" title="Clique para editar o cliente desta frota">
+        <td class="frota">${escapeHtml(r.frota)}</td>
+        <td>${escapeHtml(r.filial)}</td>
+        <td>${clientesNorm ? escapeHtml(clientesNorm) : '<span class="badge outro">Sem cliente</span>'}</td>
+        <td>${tdValidos}</td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('tr[data-editar]').forEach(tr=>{
+      tr.addEventListener('click', ()=>{
+        const [filial, frota] = tr.dataset.editar.split('|');
+        abrirModalEditar(filial, frota);
+      });
+    });
+
+    els.tfootMsg.textContent = rows.length === 0 ? 'Nenhuma frota encontrada com os filtros atuais.' : '';
+
+    renderDivergencias(totalCount);
+  }
+
+  // ---------------- Sistema de Tags (Chips) ----------------
+  function setupTagInput(containerId, inputId, suggestionsId, onChangeCallback) {
+    const container = document.getElementById(containerId);
+    const input = document.getElementById(inputId);
+    const suggestionsBox = document.getElementById(suggestionsId);
+    let selected = [];
+    
+    function getAvailable() {
+       const set = new Set();
+       allFrotas.forEach(r => clientesDaLinha(r).forEach(c => set.add(c)));
+       return Array.from(set).sort((a,b) => a.localeCompare(b, 'pt-BR'));
+    }
+  
+    function renderTags() {
+      container.querySelectorAll('.tag-chip').forEach(el => el.remove());
+      selected.forEach(tag => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'tag-chip';
+        tagEl.innerHTML = `<span>${escapeHtml(tag)}</span><button type="button" class="tag-remove">✕</button>`;
+        tagEl.querySelector('.tag-remove').onclick = () => {
+          selected = selected.filter(t => t !== tag);
+          renderTags();
+        };
+        container.insertBefore(tagEl, input);
+      });
+      if(onChangeCallback) onChangeCallback();
+    }
+  
+    function getMatches(val) {
+      const available = getAvailable();
+      const valNorm = normalizarCliente(val);
+      return available.filter(c => saoClientesEquivalentes(c, valNorm) && !selected.includes(c));
+    }
+
+    function showSuggestions(val) {
+      const matches = getMatches(val);
+      suggestionsBox.innerHTML = '';
+      if (matches.length > 0) {
+        matches.forEach(m => {
+          const item = document.createElement('div');
+          item.className = 'tag-suggestion-item';
+          item.textContent = m;
+          item.onclick = () => {
+            selected.push(m);
+            input.value = '';
+            suggestionsBox.classList.remove('show');
+            renderTags();
+            input.focus();
+          };
+          suggestionsBox.appendChild(item);
+        });
+        suggestionsBox.classList.add('show');
+      } else {
+        suggestionsBox.classList.remove('show');
+      }
+    }
+  
+    input.addEventListener('input', (e) => {
+      const val = e.target.value.trim();
+      if(val) showSuggestions(val);
+      else suggestionsBox.classList.remove('show');
+    });
+  
+    input.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') {
+        e.preventDefault();
+        const val = input.value.trim();
+        if(val) {
+          const matches = getMatches(val);
+          if(matches.length > 0) {
+            selected.push(matches[0]);
+            input.value = '';
+            suggestionsBox.classList.remove('show');
+            renderTags();
+          }
+        }
+      } else if (e.key === 'Backspace' && input.value === '' && selected.length > 0) {
+        selected.pop();
+        renderTags();
+      }
+    });
+  
+    document.addEventListener('click', (e) => {
+      if(!container.contains(e.target)) suggestionsBox.classList.remove('show');
+    });
+  
+    return {
+      setTags: (tagsArray) => {
+        selected = tagsArray ? [...tagsArray] : [];
+        renderTags();
+      },
+      getTags: () => selected.join(', '),
+      getSelectedArray: () => [...selected]
+    };
+  }
+
+  function checkEditarChanges() {
+    const currentTags = edTags.getSelectedArray().slice().sort().join(',');
+    const edSalvarBtn = document.getElementById('edSalvar');
+    if (currentTags !== initialTagsStr) {
+      edSalvarBtn.style.display = 'inline-block';
+    } else {
+      edSalvarBtn.style.display = 'none';
+    }
+  }
+
+  const edTags = setupTagInput('edTagsContainer', 'edTagInput', 'edTagSuggestions', checkEditarChanges);
+  const nvTags = setupTagInput('nvTagsContainer', 'nvTagInput', 'nvTagSuggestions');
+
+  // ---------------- Modal Editar ----------------
+  const modalEditar = document.getElementById('modalEditar');
+  const edFilial = document.getElementById('edFilial');
+  const edFrota = document.getElementById('edFrota');
+  const edMsg = document.getElementById('edMsg');
+
+  function popularFrotasDoSelect(filial, selecionar){
+    const lista = allFrotas.filter(r => r.filial === filial);
+    edFrota.innerHTML = lista.map(r => `<option value="${escapeHtml(r.frota)}">${escapeHtml(r.frota)}</option>`).join('');
+    if(selecionar) edFrota.value = selecionar;
+    preencherClientesAtual();
+  }
+
+  function preencherClientesAtual(){
+    const item = allFrotas.find(r => r.filial === edFilial.value && r.frota === edFrota.value);
+    const initialArr = item ? clientesDaLinha(item) : [];
+    initialTagsStr = initialArr.slice().sort().join(',');
+    edTags.setTags(initialArr);
+    checkEditarChanges();
+  }
+
+  function abrirModalEditar(filial, frota){
+    edMsg.className = 'modal-msg';
+    edFilial.value = filial || filiais[0];
+    popularFrotasDoSelect(edFilial.value, frota);
+    modalEditar.classList.add('open');
+  }
+
+  edFilial.addEventListener('change', () => popularFrotasDoSelect(edFilial.value));
+  edFrota.addEventListener('change', preencherClientesAtual);
+  document.getElementById('btnEditar').addEventListener('click', () => abrirModalEditar(filiais[0]));
+
+  const edSalvarBtn = document.getElementById('edSalvar');
+  const edExcluirBtn = document.getElementById('edExcluirFrota');
+
+  edSalvarBtn.addEventListener('click', async ()=>{
+    edMsg.className = 'modal-msg';
+    edSalvarBtn.disabled = true; edExcluirBtn.disabled = true;
+    const textoOriginal = edSalvarBtn.textContent;
+    edSalvarBtn.textContent = 'Salvando…';
+    try{
+      const clientesStr = edTags.getTags();
+      const r = await apiPost({ action:'salvarCliente', filial: edFilial.value, frota: edFrota.value, clientes: clientesStr });
+      
+      const item = allFrotas.find(x => x.filial === edFilial.value && x.frota === edFrota.value);
+      if(item) item.cliente = clientesStr;
+      
+      edMsg.textContent = r.message; edMsg.className = 'modal-msg ok show';
+      
+      refreshDataSilent();
+      
+      setTimeout(() => { modalEditar.classList.remove('open'); }, 800);
+    }catch(err){
+      edMsg.textContent = err.message; edMsg.className = 'modal-msg err show';
+    }finally{
+      edSalvarBtn.disabled = false; edExcluirBtn.disabled = false;
+      edSalvarBtn.textContent = textoOriginal;
+    }
+  });
+
+  edExcluirBtn.addEventListener('click', async ()=>{
+    if(!confirm('Excluir a frota ' + edFrota.value + ' da filial ' + edFilial.value + '? Esta ação não pode ser desfeita.')) return;
+    edMsg.className = 'modal-msg';
+    edSalvarBtn.disabled = true; edExcluirBtn.disabled = true;
+    const textoOriginal = edExcluirBtn.textContent;
+    edExcluirBtn.textContent = 'Excluindo…';
+    try{
+      const r = await apiPost({ action:'excluirFrota', filial: edFilial.value, frota: edFrota.value });
+      
+      allFrotas = allFrotas.filter(x => !(x.filial === edFilial.value && x.frota === edFrota.value));
+      
+      edMsg.textContent = r.message; edMsg.className = 'modal-msg ok show';
+      
+      refreshDataSilent();
+      
+      setTimeout(() => { modalEditar.classList.remove('open'); }, 800);
+    }catch(err){
+      edMsg.textContent = err.message; edMsg.className = 'modal-msg err show';
+    }finally{
+      edSalvarBtn.disabled = false; edExcluirBtn.disabled = false;
+      edSalvarBtn.textContent = textoOriginal;
+    }
+  });
+
+  // ---------------- Modal Nova Frota ----------------
+  const modalNova = document.getElementById('modalNova');
+  document.getElementById('btnNova').addEventListener('click', ()=>{
+    document.getElementById('nvMsg').className = 'modal-msg';
+    document.getElementById('nvFilial').value = filiais[0];
+    document.getElementById('nvFrota').value = '';
+    nvTags.setTags([]);
+    modalNova.classList.add('open');
+  });
+
+  const nvSalvarBtn = document.getElementById('nvSalvar');
+  nvSalvarBtn.addEventListener('click', async ()=>{
+    const nvMsg = document.getElementById('nvMsg');
+    const filial = document.getElementById('nvFilial').value;
+    const frota = document.getElementById('nvFrota').value.trim();
+    const clientes = nvTags.getTags();
+    
+    if(!frota){ nvMsg.textContent = 'Informe o número da frota.'; nvMsg.className = 'modal-msg err show'; return; }
+    
+    nvMsg.className = 'modal-msg';
+    nvSalvarBtn.disabled = true;
+    const textoOriginal = nvSalvarBtn.textContent;
+    nvSalvarBtn.textContent = 'Criando…';
+    try{
+      const r = await apiPost({ action:'novaFrota', filial, frota, clientes });
+      nvMsg.textContent = r.message; nvMsg.className = 'modal-msg ok show';
+      
+      refreshDataSilent();
+      
+      setTimeout(() => { modalNova.classList.remove('open'); }, 800);
+    }catch(err){
+      nvMsg.textContent = err.message; nvMsg.className = 'modal-msg err show';
+    }finally{
+      nvSalvarBtn.disabled = false;
+      nvSalvarBtn.textContent = textoOriginal;
+    }
+  });
+
+  // ---------------- Fechar modais ----------------
+  document.querySelectorAll('[data-close]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      btn.closest('.modal-backdrop').classList.remove('open');
+    });
+  });
+  document.querySelectorAll('.modal-backdrop').forEach(mb=>{
+    mb.addEventListener('click', (e)=>{ if(e.target === mb) mb.classList.remove('open'); });
+  });
+
+  // ---------------- Comparação / divergências ----------------
+  document.getElementById('btnComparar').addEventListener('click', async ()=>{
+    els.btnComparar.disabled = true;
+    els.btnComparar.textContent = 'Verificando…';
+    try{
+      const r = await apiGet('comparar');
+      ultimaComparacao = r.divergencias;
+      setViewMode('divergencias'); 
+      render();
+    }catch(err){
+      alert('Erro ao comparar: ' + err.message);
+    }finally{
+      els.btnComparar.disabled = false;
+      els.btnComparar.textContent = 'Verificar divergências';
+    }
+  });
+
+  function renderDivergencias(totalCount){
+    if(!ultimaComparacao) return;
+
+    const filialFilter = els.filterFilial.value;
+    const clienteFilter = els.filterCliente.value;
+    const q = els.search.value.trim().toLowerCase();
+
+    const divergenciasReais = ultimaComparacao.map(d => {
+      if (d.tipo === 'frota_nova') return d;
+
+      const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c));
+      const clientesRelacao = (d.clientesRelacao || []).map(c => normalizarCliente(c));
+      
+      const faltantesReais = clientesAtfs.filter(cliAtfs => {
+        return !clientesRelacao.some(cliRel => saoClientesEquivalentes(cliAtfs, cliRel));
+      });
+      
+      return { ...d, clientesFaltandoCorrigido: faltantesReais };
+    }).filter(d => {
+      if (d.tipo !== 'frota_nova' && d.clientesFaltandoCorrigido.length === 0) return false;
+      return true;
+    });
+
+    const divergenciasFiltradas = divergenciasReais.filter(d => {
+      if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
+
+      // Foca APENAS nos clientes que são a causa da divergência
+      const clientesPendentes = d.tipo === 'frota_nova' 
+        ? (d.clientesAtfs || []).map(normalizarCliente) 
+        : d.clientesFaltandoCorrigido;
+
+      if (clienteFilter !== 'TODOS') {
+        const clienteNorm = normalizarCliente(clienteFilter);
+        // Aplica a regra de Exceções apenas aos clientes pendentes
+        if (!clientesPendentes.some(c => saoClientesEquivalentes(c, clienteNorm))) return false;
+      }
+
+      if (q) {
+        const matchFrota = d.frota.toLowerCase().includes(q);
+        const matchCliente = clientesPendentes.some(c => c.toLowerCase().includes(q));
+        if (!matchFrota && !matchCliente) return false;
+      }
+
+      return true;
+    });
+
+    const novasCount = divergenciasFiltradas.filter(d => d.tipo === 'frota_nova').length;
+    const divCount = divergenciasFiltradas.length;
+
+    els.stNovas.textContent = novasCount;
+    els.stDivergencias.textContent = divCount;
+
+    updateBar('barNovas', novasCount, totalCount);
+    updateBar('barDivergencias', divCount, totalCount);
+
+    if (divergenciasReais.length === 0) {
+      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
+      return;
+    }
+
+    if (divergenciasFiltradas.length === 0) {
+      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada para os filtros e buscas atuais.</div>';
+      return;
+    }
+
+    els.divList.innerHTML = divergenciasFiltradas.map(d => {
+      if (d.tipo === 'frota_nova') {
+        const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
+        return `<div class="div-item novo">
+          <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
+          <div class="detalhe">Não existe a frota ${escapeHtml(d.frota)} na Relação de Frota, Cliente(s): ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
+        </div>`;
+      }
+      
+      const faltantesNorm = Array.from(new Set(d.clientesFaltandoCorrigido));
+      return `<div class="div-item dif">
+        <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge amber">Cliente diferente</span></div>
+        <div class="detalhe">Falta ATF: ${escapeHtml(faltantesNorm.join(', ') || '—')}</div>
+      </div>`;
+    }).join('');
+  }
+
+  els.filterFilial.addEventListener('change', () => { refreshFilterOptions(); render(); });
+  els.filterCliente.addEventListener('change', () => { refreshFilterOptions(); render(); });
+  els.search.addEventListener('input', render);
+  els.btnRefresh.addEventListener('click', refreshDataSilent);
+
+  loadData();
+})();
+</script>
+</body>
+</html>
