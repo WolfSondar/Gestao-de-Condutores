@@ -34,7 +34,6 @@
   #filterFilial:hover,#filterCliente:hover{border-color:rgba(255,255,255,.55);}
   #filterFilial option,#filterCliente option{background:#fff;color:var(--slate-900);}
 
-  /* Skeleton Loading */
   @keyframes shimmer{
     0%{background-position:-400px 0;}
     100%{background-position:400px 0;}
@@ -61,7 +60,6 @@
   .stat .k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;color:var(--slate-600);}
   .stat .v{font-family:var(--font-display);font-size:26px;font-weight:700;margin-top:6px;color:var(--slate-900);}
   
-  /* Progress Bars */
   .stat .bar {height:4px;border-radius:2px;background:var(--line);margin-top:10px;overflow:hidden;}
   .stat .bar i {display:block;height:100%;border-radius:2px;transition:width 0.3s ease;}
   .stat.total .bar i {background:var(--navy-700);width:100%;}
@@ -103,11 +101,6 @@
   .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:26px;}
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
   .panel h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
-  .btn-copy-header{display:inline-flex;align-items:center;gap:5px;background:#eef1f7;color:var(--navy-800);border:1.5px solid var(--line);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:background .15s,border-color .15s,transform .1s;}
-  .btn-copy-header:hover{background:#e2e7f2;border-color:var(--navy-700);}
-  .btn-copy-header:active{transform:scale(.96);}
-  .btn-copy-header.copiado{background:var(--green-soft);color:var(--green);border-color:var(--green);}
-  .btn-copy-header svg{width:13px;height:13px;flex:none;}
   .panel .sub{font-size:12px;color:var(--slate-600);margin:0;}
   .div-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
   .div-item.novo{border-left:4px solid var(--amber);}
@@ -138,7 +131,6 @@
   .field select:focus, .field input:focus, .field textarea:focus{border-color:var(--navy-700);}
   .field .hint{font-size:11.5px;color:var(--slate-400);}
   
-  /* Sistema de Tags (Chips) */
   .tags-input {
     border: 1.5px solid var(--line); border-radius: 9px; padding: 6px 8px; font-size: 13px; 
     font-family: var(--font-body); display: flex; flex-wrap: wrap; gap: 6px; position: relative; 
@@ -245,8 +237,6 @@
       </div>
       <button class="btn btn-primary" id="btnEditar">Editar cliente da frota</button>
       <button class="btn btn-ghost" id="btnNova">+ Nova frota</button>
-      <button class="btn btn-ghost" id="btnComparar">Verificar divergências</button>
-      
       <button class="btn btn-ghost btn-toggle-view" id="btnToggleView" style="display:none;">Ver Lista de Frotas</button>
     </div>
 
@@ -268,13 +258,7 @@
     <div class="panel" id="panelDivergencias">
       <div class="panel-head">
         <div>
-          <h3>Divergências com a Relação de Frota
-            <button class="btn-copy-header" id="btnCopiarDivTabela" title="Copiar tabela para colar no Excel">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              <span id="btnCopiarDivTabelaTexto">Copiar tabela</span>
-            </button>
-          </h3>
-          <p class="sub">Comparação priorizando as atualizações da planilha ATFS frente à aba "ATF's" da RELAÇÃO DE FROTA VMG 2026</p>
+          <h3>Divergências com a Relação de Frota</h3>
         </div>
       </div>
       <div id="divList"></div>
@@ -300,57 +284,54 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-danger" id="edExcluirFrota">Excluir frota</button>
-      <button class="btn btn-primary" id="edSalvar" style="display:none;">Salvar</button>
+      <button class="btn btn-primary" id="edSalvar">Salvar alterações</button>
     </div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="modalNova">
   <div class="modal-card">
-    <div class="modal-head"><h2>Nova frota</h2><button class="modal-close" data-close>✕</button></div>
+    <div class="modal-head"><h2>Cadastrar nova frota</h2><button class="modal-close" data-close>✕</button></div>
     <div class="modal-body">
       <div class="field"><label>Filial</label><select id="nvFilial"></select></div>
-      <div class="field"><label>Número da frota</label><input type="text" id="nvFrota" placeholder="Ex: 1035"></div>
+      <div class="field"><label>Nova Frota</label><input type="text" id="nvFrota" placeholder="Ex: 1234"></div>
       <div class="field">
         <label>Cliente(s)</label>
         <div class="tags-input" id="nvTagsContainer">
           <input type="text" id="nvTagInput" placeholder="Adicionar cliente...">
           <div id="nvTagSuggestions" class="tag-suggestions"></div>
         </div>
-        <span class="hint">Digite e selecione na lista.</span>
       </div>
       <div class="modal-msg" id="nvMsg"></div>
     </div>
-    <div class="modal-foot" style="justify-content:flex-end;">
-      <button class="btn btn-primary" id="nvSalvar">Criar frota</button>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close>Cancelar</button>
+      <button class="btn btn-primary" id="nvSalvar">Cadastrar</button>
     </div>
   </div>
 </div>
 
 <script>
-(function(){
-  // ============== CONFIGURAÇÃO — preencha após publicar o Apps Script ==============
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxVYdIEWJJWCmBc5wJlDZyjHVKZgMixd7iyfpXH7ilu5sMBbBQkSgkyFI6AxI7t40h-xw/exec';
-  const TOKEN = 'TROQUE-ESTA-CHAVE-SECRETA';
-  // ====================================================================================
+  // ATENÇÃO: Preencha com sua URL do Apps Script e Token se existirem
+  const API_URL = 'SUA_URL_DO_APPS_SCRIPT_AQUI'; 
+  const TOKEN = 'SEU_TOKEN_AQUI'; 
 
   const els = {
-    statusDot: document.getElementById('statusDot'),
-    statusText: document.getElementById('statusText'),
     empty: document.getElementById('emptyState'),
     error: document.getElementById('errorState'),
     errorDetail: document.getElementById('errorDetail'),
     dash: document.getElementById('dashboard'),
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
     filterFilial: document.getElementById('filterFilial'),
     filterCliente: document.getElementById('filterCliente'),
     search: document.getElementById('search'),
-    tableWrap: document.getElementById('tableWrap'),
     tbody: document.getElementById('tbody'),
     tfootMsg: document.getElementById('tfootMsg'),
+    tableWrap: document.getElementById('tableWrap'),
     btnRefresh: document.getElementById('btnRefresh'),
     btnEditar: document.getElementById('btnEditar'),
     btnNova: document.getElementById('btnNova'),
-    btnComparar: document.getElementById('btnComparar'),
     btnToggleView: document.getElementById('btnToggleView'),
     panelDivergencias: document.getElementById('panelDivergencias'),
     divList: document.getElementById('divList'),
@@ -364,9 +345,43 @@
   let filiais = [];
   let ultimaComparacao = null;
   let viewMode = 'divergencias';
-  let initialTagsStr = '';
-  let activeCardFilter = 'all'; // 'all' vem selecionado por padrão
-  let divergenciasParaExportar = []; // última lista renderizada, usada pelo botão "Copiar tabela"
+  let activeCardFilter = 'all';
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[m]));
+  }
+
+  // --- Funções de Normalização e Regras ---
+  function normalizarCliente(nome) {
+    if (!nome) return '';
+    let str = nome.trim().replace(/\s+/g, ' ');
+    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    if (str === 'CNF2' || str.includes('CNF2')) { return 'AMAZON'; }
+    return str;
+  }
+
+  function normalizarFrota(f) {
+    // Remove qualquer espaço para evitar divergências falsas
+    return String(f || '').replace(/\s+/g, '').toUpperCase();
+  }
+
+  function isClienteIgnorado(nome) {
+    const n = normalizarCliente(nome);
+    return n === 'ADLER' || n === 'ANDLER';
+  }
+
+  function clientesDaLinha(r) {
+    if (!r || !r.cliente) return [];
+    return r.cliente.split(',').map(c => c.trim()).filter(Boolean);
+  }
+
+  function saoClientesEquivalentes(c1, c2) {
+    return normalizarCliente(c1) === normalizarCliente(c2);
+  }
+  
+  function linhaTemCliente(r, cliNorm){
+    return clientesDaLinha(r).some(c => normalizarCliente(c) === cliNorm);
+  }
 
   function setViewMode(mode) {
     viewMode = mode;
@@ -385,74 +400,27 @@
 
   els.btnToggleView.addEventListener('click', () => {
     if (viewMode === 'frotas') {
-      // Ao mudar para Divergências, reseta para mostrar todas as frotas e vai para o painel
       activeCardFilter = 'all';
       setViewMode('divergencias');
     } else {
-      // Ao mudar para Lista de Frotas, exibe todas as frotas filtradas automaticamente
       activeCardFilter = 'all';
       setViewMode('frotas');
     }
     render();
   });
 
-  function normalizarCliente(nome) {
-    if (!nome) return '';
-    let str = nome.trim().replace(/\s+/g, ' ');
-    str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-    
-    if (str === 'CNF2' || str.includes('CNF2')) {
-      return 'AMAZON';
-    }
-    
-    return str;
-  }
-
-  function escapeHtml(s){
-    return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  }
-
-  // --- CLIENTES QUE NÃO EMITEM ATF (ignorados em toda a comparação) ---
-  const CLIENTES_IGNORADOS = ['ADLER', 'LOJA ELETRICA', 'PONTO FRIO', 'DCML', 'ATMOSFERA', 'JAT']
-    .map(c => normalizarCliente(c));
-
-  function isClienteIgnorado(nome) {
-    const norm = normalizarCliente(nome);
-    return CLIENTES_IGNORADOS.some(ign => saoClientesEquivalentes(norm, ign));
-  }
-
-  // --- REGRA DE EXCEÇÃO INTELIGENTE (SINÔNIMOS) ---
-  function saoClientesEquivalentes(a, b) {
-    if (!a || !b) return false;
-    
-    const normA = normalizarCliente(a);
-    const normB = normalizarCliente(b);
-    
-    if (normA === normB || normA.includes(normB) || normB.includes(normA)) return true;
-    
-    const excecoes = [
-      ["THYSSENKRUPP SPRINGS & STABILIZERS BRASIL LTDA", "KRUPP/COSMA"]
-    ];
-    
-    for (let par of excecoes) {
-      const p0 = normalizarCliente(par[0]);
-      const p1 = normalizarCliente(par[1]);
-      if ((p0.includes(normA) || normA.includes(p0)) && (p1.includes(normB) || normB.includes(p1))) return true;
-      if ((p1.includes(normA) || normA.includes(p1)) && (p0.includes(normB) || normB.includes(p0))) return true;
-    }
-    
-    return false;
-  }
-
-  async function apiGet(action, extraParams){
-    const p = new URLSearchParams(Object.assign({ action, token: TOKEN }, extraParams || {}));
-    const res = await fetch(API_URL + '?' + p.toString());
+  async function apiGet(action, params = {}) {
+    const u = new URL(API_URL);
+    u.searchParams.append('token', TOKEN);
+    u.searchParams.append('action', action);
+    for(let k in params) u.searchParams.append(k, params[k]);
+    const res = await fetch(u);
     const data = await res.json();
-    if(!data.ok) throw new Error(data.message || 'Erro desconhecido');
+    if(!data.ok) throw new Error(data.message || 'Erro de API');
     return data;
   }
 
-  async function apiPost(body){
+  async function apiPost(body) {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -463,34 +431,44 @@
     return data;
   }
 
-  function setStatus(state, text){
+  function setStatus(state, text) {
     els.statusDot.className = 'dot' + (state === 'ok' ? '' : state === 'err' ? ' err' : ' off');
     els.statusText.textContent = text;
   }
 
-  async function loadData(){
+  function prepararComparacao(compData) {
+    // Corrige os falsos positivos de "frota_nova" causados por espaços em branco
+    return compData.filter(d => {
+      if (d.tipo === 'frota_nova') {
+         const existeNoSistema = allFrotas.some(r => normalizarFrota(r.frota) === normalizarFrota(d.frota) && r.filial === d.filial);
+         if (existeNoSistema) {
+             return false; // É um falso positivo, já existe no sistema, apenas com espaçamento diferente
+         }
+      }
+      return true;
+    });
+  }
+
+  async function loadData() {
     setStatus('', 'Conectando…');
     els.empty.classList.remove('hidden');
     els.error.classList.add('hidden');
     els.dash.classList.add('hidden');
     try{
       const [rFiliais, rFrotas, rComp] = await Promise.all([
-        apiGet('filiais'), 
+        apiGet('filiais'),
         apiGet('frotas', { filial: 'TODOS' }),
         apiGet('comparar')
       ]);
-
       filiais = rFiliais.filiais;
       allFrotas = rFrotas.frotas;
-      ultimaComparacao = rComp.divergencias;
-
+      ultimaComparacao = prepararComparacao(rComp.divergencias);
+      
       populaFiliaisSelects();
       refreshFilterOptions();
       setStatus('ok', 'Conectado');
-      
       els.empty.classList.add('hidden');
       els.dash.classList.remove('hidden');
-      
       setViewMode('divergencias');
       render();
     }catch(err){
@@ -501,19 +479,18 @@
     }
   }
 
-  async function refreshDataSilent(){
+  async function refreshDataSilent() {
     try{
       setStatus('', 'Atualizando dados…');
       const [rFiliais, rFrotas, rComp] = await Promise.all([
-        apiGet('filiais'), 
+        apiGet('filiais'),
         apiGet('frotas', { filial: 'TODOS' }),
         apiGet('comparar')
       ]);
-
       filiais = rFiliais.filiais;
       allFrotas = rFrotas.frotas;
-      ultimaComparacao = rComp.divergencias;
-
+      ultimaComparacao = prepararComparacao(rComp.divergencias);
+      
       populaFiliaisSelects();
       refreshFilterOptions();
       setStatus('ok', 'Conectado');
@@ -523,82 +500,148 @@
     }
   }
 
-  function populaFiliaisSelects(){
-    const opts = filiais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
-    els.filterFilial.innerHTML = '<option value="TODOS">Todas as filiais</option>' + opts;
-    document.getElementById('edFilial').innerHTML = opts;
-    document.getElementById('nvFilial').innerHTML = opts;
+  els.btnRefresh.addEventListener('click', refreshDataSilent);
+
+  function populaFiliaisSelects() {
+    const opts = ['<option value="TODOS">Todas as filiais</option>'].concat(filiais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`));
+    els.filterFilial.innerHTML = opts.join('');
+    document.getElementById('edFilial').innerHTML = filiais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+    document.getElementById('nvFilial').innerHTML = filiais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
   }
 
-  function clientesDaLinha(r){
-    if(!r || !r.cliente) return [];
-    const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean).filter(c => !isClienteIgnorado(c));
-    return Array.from(new Set(lista));
+  function refreshFilterOptions() {
+    const f = els.filterFilial.value;
+    const cliSet = new Set();
+    allFrotas.forEach(r => {
+      if(f === 'TODOS' || r.filial === f){
+        clientesDaLinha(r).forEach(c => cliSet.add(normalizarCliente(c)));
+      }
+    });
+    const curr = els.filterCliente.value;
+    const arr = Array.from(cliSet).sort();
+    els.filterCliente.innerHTML = '<option value="TODOS">Todos os clientes</option>' + arr.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+    if (arr.includes(curr)) els.filterCliente.value = curr;
   }
 
-  function linhaTemCliente(r, cliente){
-    return clientesDaLinha(r).some(c => saoClientesEquivalentes(c, cliente));
-  }
-
-  function clientesVisiveis(filial){
-    const rows = filial === 'TODOS' ? allFrotas : allFrotas.filter(r => r.filial === filial);
-    const set = new Set();
-    rows.forEach(r => clientesDaLinha(r).forEach(c => set.add(c)));
-    return Array.from(set).sort((a,b) => a.localeCompare(b, 'pt-BR'));
-  }
-
-  function filiaisVisiveis(cliente){
-    if(cliente === 'TODOS') return filiais.slice();
-    const set = new Set();
-    allFrotas.forEach(r => { if(linhaTemCliente(r, cliente)) set.add(r.filial); });
-    return filiais.filter(f => set.has(f));
-  }
-
-  function refreshFilterOptions(){
-    const filialAtual = els.filterFilial.value || 'TODOS';
-    const clienteAtual = els.filterCliente.value || 'TODOS';
-
-    const opcoesFiliais = filiaisVisiveis(clienteAtual);
-    const opcoesClientes = clientesVisiveis(filialAtual);
-
-    els.filterFilial.innerHTML = '<option value="TODOS">Todas as filiais</option>' +
-      opcoesFiliais.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
-    els.filterCliente.innerHTML = '<option value="TODOS">Todos os clientes</option>' +
-      opcoesClientes.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-
-    els.filterFilial.value = opcoesFiliais.includes(filialAtual) ? filialAtual : 'TODOS';
-    els.filterCliente.value = opcoesClientes.includes(clienteAtual) ? clienteAtual : 'TODOS';
-  }
-
-  function frotasFiltradas(){
-    const filial = els.filterFilial.value;
-    const cliente = els.filterCliente.value;
+  function calcularStatsDinamicamente() {
+    const filialFilter = els.filterFilial.value;
+    const clienteFilter = els.filterCliente.value;
     const q = els.search.value.trim().toLowerCase();
-    
-    return allFrotas.filter(r=>{
-      if(filial !== 'TODOS' && r.filial !== filial) return false;
-      if(cliente !== 'TODOS' && !linhaTemCliente(r, cliente)) return false;
+
+    let frotasTotal = 0;
+    let frotasValidas = 0;
+    let divergenciasCount = 0;
+    let novasCount = 0;
+
+    allFrotas.forEach(r => {
+      if (filialFilter !== 'TODOS' && r.filial !== filialFilter) return;
       
-      const clientesStr = clientesDaLinha(r).join(', ').toLowerCase();
-      if(q && !(r.frota.toLowerCase().includes(q) || clientesStr.includes(q) || (r.cliente||'').toLowerCase().includes(q))) return false;
+      const clientes = clientesDaLinha(r);
+      const clientesNaoIgnorados = clientes.filter(c => !isClienteIgnorado(c));
       
-      // Filtro adicional quando o card "Frotas c/ ATFs Válidas" estiver ativo
+      // REGRA: Ignora frotas que possuem apenas clientes isentos (ex: Adler)
+      if (clientes.length > 0 && clientesNaoIgnorados.length === 0) return;
+      if (clienteFilter !== 'TODOS' && !clientes.some(c => saoClientesEquivalentes(c, clienteFilter))) return;
+      
+      const clientesStr = clientes.join(', ').toLowerCase();
+      if (q && !(String(r.frota).toLowerCase().includes(q) || clientesStr.includes(q))) return;
+
+      frotasTotal++;
+
+      let isValido = true;
+      if (ultimaComparacao) {
+        const comp = ultimaComparacao.find(c => normalizarFrota(c.frota) === normalizarFrota(r.frota) && c.filial === r.filial);
+        if (comp) {
+          isValido = false;
+          if (comp.tipo === 'frota_nova') novasCount++;
+          else divergenciasCount++;
+        }
+      }
+      
+      if (isValido) frotasValidas++;
+    });
+
+    if (ultimaComparacao) {
+        ultimaComparacao.forEach(d => {
+            if (d.tipo === 'frota_nova') {
+                if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return;
+                
+                const clientesAtfs = (d.clientesAtfs || []).filter(c => !isClienteIgnorado(c));
+                if (d.clientesAtfs && d.clientesAtfs.length > 0 && clientesAtfs.length === 0) return;
+                
+                if (clienteFilter !== 'TODOS' && !clientesAtfs.some(c => saoClientesEquivalentes(c, clienteFilter))) return;
+                
+                if (q) {
+                    const matchFrota = String(d.frota).toLowerCase().includes(q);
+                    const matchCli = clientesAtfs.join(', ').toLowerCase().includes(q);
+                    if (!matchFrota && !matchCli) return;
+                }
+                novasCount++;
+                frotasTotal++; 
+            }
+        });
+    }
+
+    els.stTotal.textContent = frotasTotal;
+    els.stValidadas.textContent = frotasValidas;
+    els.stDivergencias.textContent = divergenciasCount + novasCount; // O card de divergências engloba as diferenças + frotas novas
+    els.stNovas.textContent = novasCount;
+
+    const realTotal = frotasTotal || 1;
+    updateBar('barValidadas', frotasValidas, realTotal);
+    updateBar('barDivergencias', divergenciasCount + novasCount, realTotal);
+    updateBar('barNovas', novasCount, realTotal);
+  }
+
+  function frotasFiltradas() {
+    const filialFilter = els.filterFilial.value;
+    const clienteFilter = els.filterCliente.value;
+    const q = els.search.value.trim().toLowerCase();
+
+    return allFrotas.filter(r => {
+      if (filialFilter !== 'TODOS' && r.filial !== filialFilter) return false;
+      
+      const clientes = clientesDaLinha(r);
+      const clientesNaoIgnorados = clientes.filter(c => !isClienteIgnorado(c));
+      
+      if (clientes.length > 0 && clientesNaoIgnorados.length === 0) return false;
+      if (clienteFilter !== 'TODOS' && !clientes.some(c => saoClientesEquivalentes(c, clienteFilter))) return false;
+      
+      const clientesStr = clientes.join(', ').toLowerCase();
+      if (q && !(String(r.frota).toLowerCase().includes(q) || clientesStr.includes(q) || (r.cliente||'').toLowerCase().includes(q))) return false;
+
       if (activeCardFilter === 'validadas') {
-        const arrReg = clientesDaLinha(r);
-        if(arrReg.length === 0) return false;
         let isValido = false;
         if (ultimaComparacao) {
-          const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
-          if (comp) {
-            if (comp.tipo !== 'frota_nova') {
-              const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
-              isValido = arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
-            }
-          } else {
+          const comp = ultimaComparacao.find(c => normalizarFrota(c.frota) === normalizarFrota(r.frota) && c.filial === r.filial);
+          if (comp && comp.tipo !== 'frota_nova') {
+            const relacao = (comp.clientesRelacao || []).map(normalizarCliente);
+            isValido = clientesNaoIgnorados.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
+          } else if (!comp) {
             isValido = true;
           }
+        } else {
+          isValido = true;
         }
         if (!isValido) return false;
+      }
+
+      if (activeCardFilter === 'divergencias') {
+        let isDiv = false;
+        if (ultimaComparacao) {
+          const comp = ultimaComparacao.find(c => normalizarFrota(c.frota) === normalizarFrota(r.frota) && c.filial === r.filial);
+          if (comp) isDiv = true; // Inclui frota nova na visão da tabela
+        }
+        if (!isDiv) return false;
+      }
+
+      if (activeCardFilter === 'novas') {
+         let isNova = false;
+         if (ultimaComparacao) {
+           const comp = ultimaComparacao.find(c => normalizarFrota(c.frota) === normalizarFrota(r.frota) && c.filial === r.filial);
+           if (comp && comp.tipo === 'frota_nova') isNova = true; 
+         }
+         if (!isNova) return false;
       }
 
       return true;
@@ -614,76 +657,49 @@
   function syncActiveCards() {
     document.querySelectorAll('.stat').forEach(el => {
       const f = el.dataset.filter;
-      if (f === activeCardFilter) {
-        el.classList.add('active');
-      } else {
-        el.classList.remove('active');
-      }
+      if (f === activeCardFilter) el.classList.add('active');
+      else el.classList.remove('active');
     });
   }
 
-  function render(){
+  function metaChipsHtml(df){
+    if(!df) return '';
+    const arr = [];
+    if(df.placa) arr.push(`<div class="meta-chip"><span class="lbl">Placa</span><span class="val">${escapeHtml(df.placa)}</span></div>`);
+    if(df.lotacao) arr.push(`<div class="meta-chip"><span class="lbl">Lot</span><span class="val">${escapeHtml(df.lotacao)}</span></div>`);
+    if(df.anoModelo) arr.push(`<div class="meta-chip"><span class="lbl">Ano</span><span class="val">${escapeHtml(df.anoModelo)}</span></div>`);
+    return arr.length ? `<div class="frota-meta">${arr.join('')}</div>` : '';
+  }
+
+  function render() {
     syncActiveCards();
+    calcularStatsDinamicamente();
+
     const rows = frotasFiltradas();
-    const totalCount = allFrotas.length || 1;
-    els.stTotal.textContent = allFrotas.length;
-
-    let validadasCount = 0;
-    allFrotas.forEach(r => {
-      const arrReg = clientesDaLinha(r);
-      if(arrReg.length === 0) return;
-      
-      let isValido = false;
-      if (ultimaComparacao) {
-        const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
-        if (comp) {
-          if (comp.tipo !== 'frota_nova') {
-            const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
-            isValido = arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
-          }
-        } else {
-          isValido = true;
-        }
-      }
-      if(isValido) validadasCount++;
-    });
-
-    els.stValidadas.textContent = validadasCount;
-    updateBar('barValidadas', validadasCount, totalCount);
-
+    
     els.tbody.innerHTML = rows.map(r => {
-      const arrReg = clientesDaLinha(r);
-      const clientesNorm = arrReg.join(', ');
+      const clientesStr = clientesDaLinha(r).join(', ');
+      let classValida = '';
+      let tdValidos = '<span style="color:var(--slate-400)">-</span>';
       
-      let clientesValidosStr = '';
-      let isValidRow = false;
-
       if (ultimaComparacao) {
-        const comp = ultimaComparacao.find(c => String(c.frota) === String(r.frota) && c.filial === r.filial);
+        const comp = ultimaComparacao.find(c => normalizarFrota(c.frota) === normalizarFrota(r.frota) && c.filial === r.filial);
         if (comp) {
           if (comp.tipo !== 'frota_nova') {
-            const relacao = (comp.clientesRelacao || []).map(c => normalizarCliente(c));
-            clientesValidosStr = Array.from(new Set(relacao)).join(', ');
-            
-            isValidRow = arrReg.length > 0 && arrReg.some(reg => relacao.some(val => saoClientesEquivalentes(reg, val)));
+            tdValidos = (comp.clientesRelacao || []).join(', ');
+          } else {
+            tdValidos = '<span class="badge amber">Frota Nova (Não no ATFS)</span>';
           }
         } else {
-          clientesValidosStr = clientesNorm;
-          isValidRow = arrReg.length > 0;
+          classValida = 'row-valida';
+          tdValidos = '<span class="badge" style="background:#e4f7ef;color:#2bad7d">Válidos</span>';
         }
       }
-
-      const tdValidos = clientesValidosStr 
-        ? escapeHtml(clientesValidosStr) 
-        : '<span class="badge red">Nenhum ativo</span>';
-
-      const rowClass = isValidRow ? 'class="row-valida"' : '';
-
-      return `
-      <tr ${rowClass} data-editar="${escapeHtml(r.filial)}|${escapeHtml(r.frota)}" title="Clique para editar o cliente desta frota">
+      
+      return `<tr data-editar="${escapeHtml(r.filial)}|${escapeHtml(r.frota)}" title="Clique para editar o cliente desta frota" class="${classValida}">
         <td class="frota">${escapeHtml(r.frota)}</td>
         <td>${escapeHtml(r.filial)}</td>
-        <td>${clientesNorm ? escapeHtml(clientesNorm) : '<span class="badge outro">Sem cliente</span>'}</td>
+        <td>${clientesStr ? escapeHtml(clientesStr) : '<span class="badge outro">Sem cliente</span>'}</td>
         <td>${tdValidos}</td>
       </tr>`;
     }).join('');
@@ -696,9 +712,89 @@
     });
 
     els.tfootMsg.textContent = rows.length === 0 ? 'Nenhuma frota encontrada com os filtros atuais.' : '';
-
-    renderDivergencias(totalCount);
+    renderDivergencias();
   }
+
+  function renderDivergencias() {
+    if(!ultimaComparacao) return;
+    
+    const filialFilter = els.filterFilial.value;
+    const clienteFilter = els.filterCliente.value;
+    const q = els.search.value.trim().toLowerCase();
+
+    const divergenciasReais = ultimaComparacao.map(d => {
+      const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c)).filter(c => !isClienteIgnorado(c));
+      if (d.tipo === 'frota_nova') return { ...d, clientesAtfs };
+
+      const clientesRelacao = (d.clientesRelacao || []).map(c => normalizarCliente(c));
+      const faltantesReais = clientesAtfs.filter(cliAtfs => {
+        return !clientesRelacao.some(cliRel => saoClientesEquivalentes(cliAtfs, cliRel));
+      });
+      return { ...d, clientesAtfs, clientesRelacao, clientesFaltandoCorrigido: faltantesReais };
+    }).filter(d => {
+      if (!d) return false;
+      
+      // REGRA: Ignora se a frota só continha o cliente Adler e ficou sem clientes após o filtro
+      if (d.clientesAtfs.length === 0) return false;
+      if (d.tipo !== 'frota_nova' && (!d.clientesFaltandoCorrigido || d.clientesFaltandoCorrigido.length === 0)) return false;
+
+      if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
+      if (clienteFilter !== 'TODOS' && !d.clientesAtfs.some(c => saoClientesEquivalentes(c, clienteFilter))) return false;
+      
+      if (q) {
+        const matchFrota = String(d.frota).toLowerCase().includes(q);
+        const matchCli = d.clientesAtfs.join(', ').toLowerCase().includes(q);
+        if (!matchFrota && !matchCli) return false;
+      }
+      
+      if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
+      if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false; 
+      // OBS: Em activeCardFilter = 'divergencias', decidimos se exibe frota nova na view painel. O padrão visual os agrupa na mesma tela quando clica em Div, ou apenas All.
+
+      return true;
+    });
+
+    if(divergenciasReais.length === 0){
+      els.divList.innerHTML = `<div class="state-msg"><strong>Tudo certo!</strong>Nenhuma divergência encontrada.</div>`;
+    } else {
+      els.divList.innerHTML = divergenciasReais.map(d => {
+        if (d.tipo === 'frota_nova') {
+          const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
+          return `<div class="div-item novo">
+            <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
+            <div class="detalhe">Falta ATF: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
+            ${metaChipsHtml(d.dadosFrota)}
+          </div>`;
+        } else {
+          const faltantesNorm = Array.from(new Set(d.clientesFaltandoCorrigido));
+          return `<div class="div-item dif">
+            <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge amber">Cliente diferente</span></div>
+            <div class="detalhe">Falta ATF: ${escapeHtml(faltantesNorm.join(', ') || '—')}</div>
+            ${metaChipsHtml(d.dadosFrota)}
+          </div>`;
+        }
+      }).join('');
+    }
+  }
+
+  document.querySelectorAll('.stat[data-filter]').forEach(card => {
+    card.addEventListener('click', () => {
+      const filterType = card.dataset.filter;
+      if (activeCardFilter === filterType) activeCardFilter = 'all';
+      else activeCardFilter = filterType;
+
+      if (activeCardFilter === 'validadas' || activeCardFilter === 'all') {
+        setViewMode('frotas');
+      } else {
+        setViewMode('divergencias');
+      }
+      render();
+    });
+  });
+
+  els.filterFilial.addEventListener('change', () => { refreshFilterOptions(); render(); });
+  els.filterCliente.addEventListener('change', () => { render(); });
+  els.search.addEventListener('input', () => { render(); });
 
   // ---------------- Sistema de Tags (Chips) ----------------
   function setupTagInput(containerId, inputId, suggestionsId, onChangeCallback) {
@@ -706,13 +802,13 @@
     const input = document.getElementById(inputId);
     const suggestionsBox = document.getElementById(suggestionsId);
     let selected = [];
-    
+
     function getAvailable() {
-       const set = new Set();
-       allFrotas.forEach(r => clientesDaLinha(r).forEach(c => set.add(c)));
-       return Array.from(set).sort((a,b) => a.localeCompare(b, 'pt-BR'));
+      const set = new Set();
+      allFrotas.forEach(r => clientesDaLinha(r).forEach(c => set.add(c)));
+      return Array.from(set).sort((a,b) => a.localeCompare(b, 'pt-BR'));
     }
-  
+
     function renderTags() {
       container.querySelectorAll('.tag-chip').forEach(el => el.remove());
       selected.forEach(tag => {
@@ -727,7 +823,7 @@
       });
       if(onChangeCallback) onChangeCallback();
     }
-  
+
     function getMatches(val) {
       const available = getAvailable();
       const valNorm = normalizarCliente(val);
@@ -756,65 +852,46 @@
         suggestionsBox.classList.remove('show');
       }
     }
-  
-    input.addEventListener('input', (e) => {
-      const val = e.target.value.trim();
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
       if(val) showSuggestions(val);
       else suggestionsBox.classList.remove('show');
     });
-  
+
     input.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter') {
+      if (e.key === 'Enter') {
         e.preventDefault();
         const val = input.value.trim();
-        if(val) {
-          const matches = getMatches(val);
-          if(matches.length > 0) {
-            selected.push(matches[0]);
-            input.value = '';
-            suggestionsBox.classList.remove('show');
-            renderTags();
-          }
+        if(val && !selected.includes(val)){
+          selected.push(val);
+          input.value = '';
+          suggestionsBox.classList.remove('show');
+          renderTags();
         }
-      } else if (e.key === 'Backspace' && input.value === '' && selected.length > 0) {
-        selected.pop();
-        renderTags();
       }
     });
-  
+
     document.addEventListener('click', (e) => {
       if(!container.contains(e.target)) suggestionsBox.classList.remove('show');
     });
-  
+
     return {
-      setTags: (tagsArray) => {
-        selected = tagsArray ? [...tagsArray] : [];
-        renderTags();
-      },
       getTags: () => selected.join(', '),
-      getSelectedArray: () => [...selected]
+      setTags: (arr) => { selected = arr; renderTags(); },
+      clear: () => { selected = []; renderTags(); input.value = ''; }
     };
   }
 
-  function checkEditarChanges() {
-    const currentTags = edTags.getSelectedArray().slice().sort().join(',');
-    const edSalvarBtn = document.getElementById('edSalvar');
-    if (currentTags !== initialTagsStr) {
-      edSalvarBtn.style.display = 'inline-block';
-    } else {
-      edSalvarBtn.style.display = 'none';
-    }
-  }
-
-  const edTags = setupTagInput('edTagsContainer', 'edTagInput', 'edTagSuggestions', checkEditarChanges);
+  // Instanciar Tags
+  const edTags = setupTagInput('edTagsContainer', 'edTagInput', 'edTagSuggestions');
   const nvTags = setupTagInput('nvTagsContainer', 'nvTagInput', 'nvTagSuggestions');
 
-  // ---------------- Modal Editar ----------------
   const modalEditar = document.getElementById('modalEditar');
   const edFilial = document.getElementById('edFilial');
   const edFrota = document.getElementById('edFrota');
   const edMsg = document.getElementById('edMsg');
-
+  
   function popularFrotasDoSelect(filial, selecionar){
     const lista = allFrotas.filter(r => r.filial === filial);
     edFrota.innerHTML = lista.map(r => `<option value="${escapeHtml(r.frota)}">${escapeHtml(r.frota)}</option>`).join('');
@@ -823,11 +900,9 @@
   }
 
   function preencherClientesAtual(){
-    const item = allFrotas.find(r => r.filial === edFilial.value && r.frota === edFrota.value);
+    const item = allFrotas.find(r => r.filial === edFilial.value && String(r.frota) === String(edFrota.value));
     const initialArr = item ? clientesDaLinha(item) : [];
-    initialTagsStr = initialArr.slice().sort().join(',');
     edTags.setTags(initialArr);
-    checkEditarChanges();
   }
 
   function abrirModalEditar(filial, frota){
@@ -839,334 +914,90 @@
 
   edFilial.addEventListener('change', () => popularFrotasDoSelect(edFilial.value));
   edFrota.addEventListener('change', preencherClientesAtual);
-  document.getElementById('btnEditar').addEventListener('click', () => abrirModalEditar(filiais[0]));
+  els.btnEditar.addEventListener('click', () => abrirModalEditar(filiais[0]));
 
   const edSalvarBtn = document.getElementById('edSalvar');
   const edExcluirBtn = document.getElementById('edExcluirFrota');
-
+  
   edSalvarBtn.addEventListener('click', async ()=>{
     edMsg.className = 'modal-msg';
-    edSalvarBtn.disabled = true; edExcluirBtn.disabled = true;
+    edSalvarBtn.disabled = true;
+    edExcluirBtn.disabled = true;
     const textoOriginal = edSalvarBtn.textContent;
     edSalvarBtn.textContent = 'Salvando…';
     try{
       const clientesStr = edTags.getTags();
       const r = await apiPost({ action:'salvarCliente', filial: edFilial.value, frota: edFrota.value, clientes: clientesStr });
-      
-      const item = allFrotas.find(x => x.filial === edFilial.value && x.frota === edFrota.value);
+      const item = allFrotas.find(x => x.filial === edFilial.value && String(x.frota) === String(edFrota.value));
       if(item) item.cliente = clientesStr;
       
-      edMsg.textContent = r.message; edMsg.className = 'modal-msg ok show';
-      
+      edMsg.textContent = r.message || 'Salvo com sucesso';
+      edMsg.className = 'modal-msg ok show';
       refreshDataSilent();
-      
       setTimeout(() => { modalEditar.classList.remove('open'); }, 800);
     }catch(err){
-      edMsg.textContent = err.message; edMsg.className = 'modal-msg err show';
+      edMsg.textContent = err.message;
+      edMsg.className = 'modal-msg err show';
     }finally{
-      edSalvarBtn.disabled = false; edExcluirBtn.disabled = false;
+      edSalvarBtn.disabled = false;
+      edExcluirBtn.disabled = false;
       edSalvarBtn.textContent = textoOriginal;
     }
   });
 
-  edExcluirBtn.addEventListener('click', async ()=>{
-    if(!confirm('Excluir a frota ' + edFrota.value + ' da filial ' + edFilial.value + '? Esta ação não pode ser desfeita.')) return;
-    edMsg.className = 'modal-msg';
-    edSalvarBtn.disabled = true; edExcluirBtn.disabled = true;
-    const textoOriginal = edExcluirBtn.textContent;
-    edExcluirBtn.textContent = 'Excluindo…';
-    try{
-      const r = await apiPost({ action:'excluirFrota', filial: edFilial.value, frota: edFrota.value });
-      
-      allFrotas = allFrotas.filter(x => !(x.filial === edFilial.value && x.frota === edFrota.value));
-      
-      edMsg.textContent = r.message; edMsg.className = 'modal-msg ok show';
-      
-      refreshDataSilent();
-      
-      setTimeout(() => { modalEditar.classList.remove('open'); }, 800);
-    }catch(err){
-      edMsg.textContent = err.message; edMsg.className = 'modal-msg err show';
-    }finally{
-      edSalvarBtn.disabled = false; edExcluirBtn.disabled = false;
-      edSalvarBtn.textContent = textoOriginal;
-    }
-  });
-
-  // ---------------- Modal Nova Frota ----------------
   const modalNova = document.getElementById('modalNova');
-  document.getElementById('btnNova').addEventListener('click', ()=>{
+  els.btnNova.addEventListener('click', () => {
     document.getElementById('nvMsg').className = 'modal-msg';
-    document.getElementById('nvFilial').value = filiais[0];
     document.getElementById('nvFrota').value = '';
-    nvTags.setTags([]);
+    nvTags.clear();
     modalNova.classList.add('open');
   });
 
   const nvSalvarBtn = document.getElementById('nvSalvar');
   nvSalvarBtn.addEventListener('click', async ()=>{
     const nvMsg = document.getElementById('nvMsg');
+    nvMsg.className = 'modal-msg';
     const filial = document.getElementById('nvFilial').value;
     const frota = document.getElementById('nvFrota').value.trim();
     const clientes = nvTags.getTags();
-    
-    if(!frota){ nvMsg.textContent = 'Informe o número da frota.'; nvMsg.className = 'modal-msg err show'; return; }
-    
-    nvMsg.className = 'modal-msg';
+
+    if(!frota){
+      nvMsg.textContent = 'Informe a frota.';
+      nvMsg.className = 'modal-msg err show';
+      return;
+    }
     nvSalvarBtn.disabled = true;
     const textoOriginal = nvSalvarBtn.textContent;
-    nvSalvarBtn.textContent = 'Criando…';
+    nvSalvarBtn.textContent = 'Salvando…';
+    
     try{
       const r = await apiPost({ action:'novaFrota', filial, frota, clientes });
-      nvMsg.textContent = r.message; nvMsg.className = 'modal-msg ok show';
-      
+      nvMsg.textContent = r.message || 'Criado com sucesso';
+      nvMsg.className = 'modal-msg ok show';
       refreshDataSilent();
-      
       setTimeout(() => { modalNova.classList.remove('open'); }, 800);
     }catch(err){
-      nvMsg.textContent = err.message; nvMsg.className = 'modal-msg err show';
+      nvMsg.textContent = err.message;
+      nvMsg.className = 'modal-msg err show';
     }finally{
       nvSalvarBtn.disabled = false;
       nvSalvarBtn.textContent = textoOriginal;
     }
   });
 
-  // ---------------- Fechar modais ----------------
   document.querySelectorAll('[data-close]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       btn.closest('.modal-backdrop').classList.remove('open');
     });
   });
+
   document.querySelectorAll('.modal-backdrop').forEach(mb=>{
-    mb.addEventListener('click', (e)=>{ if(e.target === mb) mb.classList.remove('open'); });
-  });
-
-  // ---------------- Comparação / divergências ----------------
-  document.getElementById('btnComparar').addEventListener('click', async ()=>{
-    els.btnComparar.disabled = true;
-    els.btnComparar.textContent = 'Verificando…';
-    try{
-      const r = await apiGet('comparar');
-      ultimaComparacao = r.divergencias;
-      activeCardFilter = 'all';
-      setViewMode('divergencias'); 
-      render();
-    }catch(err){
-      alert('Erro ao comparar: ' + err.message);
-    }finally{
-      els.btnComparar.disabled = false;
-      els.btnComparar.textContent = 'Verificar divergências';
-    }
-  });
-
-  // ---------------- Copiar tabela de Divergências (formato Excel) ----------------
-  function gerarLinhasExcelDivergencias(){
-    const cabecalho = ['Frota', 'Filial', 'Situação', 'Cliente(s)', 'Lotação', 'Placa', 'Ano/Modelo', 'Chassi', 'Renavam'];
-    const linhas = divergenciasParaExportar.map(d => {
-      const situacao = d.tipo === 'frota_nova' ? 'Frota nova' : 'Cliente diferente';
-      const clientes = d.tipo === 'frota_nova'
-        ? Array.from(new Set(d.clientesAtfs || [])).join(', ')
-        : Array.from(new Set(d.clientesFaltandoCorrigido || [])).join(', ');
-      const df = d.dadosFrota || {};
-      return [d.frota, d.filial, situacao, clientes, df.lotacao || '', df.placa || '', df.anoModelo || '', df.chassi || '', df.renavam || ''];
-    });
-    return [cabecalho, ...linhas];
-  }
-
-  const btnCopiarDivTabela = document.getElementById('btnCopiarDivTabela');
-  const btnCopiarDivTabelaTexto = document.getElementById('btnCopiarDivTabelaTexto');
-  btnCopiarDivTabela.addEventListener('click', () => {
-    if(!divergenciasParaExportar || divergenciasParaExportar.length === 0){
-      alert('Não há divergências para copiar no momento.');
-      return;
-    }
-    const texto = gerarLinhasExcelDivergencias().map(linha => linha.join('\t')).join('\n');
-
-    const marcarCopiado = () => {
-      const original = btnCopiarDivTabelaTexto.textContent;
-      btnCopiarDivTabela.classList.add('copiado');
-      btnCopiarDivTabelaTexto.textContent = 'Copiado!';
-      setTimeout(() => {
-        btnCopiarDivTabela.classList.remove('copiado');
-        btnCopiarDivTabelaTexto.textContent = original;
-      }, 1200);
-    };
-
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(texto).then(marcarCopiado).catch(() => {
-        alert('Não foi possível copiar automaticamente a tabela.');
-      });
-    } else {
-      alert('Não foi possível copiar automaticamente a tabela.');
-    }
-  });
-
-  function metaChipsHtml(dadosFrota){
-    if(!dadosFrota) return '';
-    const campos = [
-      { lbl: 'Lotação',    val: dadosFrota.lotacao },
-      { lbl: 'Placa',      val: dadosFrota.placa },
-      { lbl: 'Ano/Modelo', val: dadosFrota.anoModelo },
-      { lbl: 'Chassi',     val: dadosFrota.chassi },
-      { lbl: 'Renavam',    val: dadosFrota.renavam },
-    ].filter(c => c.val);
-    if(campos.length === 0) return '';
-    return `<div class="frota-meta">${campos.map(c =>
-      `<span class="meta-chip" data-copy="${escapeHtml(String(c.val))}" title="Clique para copiar"><span class="lbl">${escapeHtml(c.lbl)}</span><span class="val">${escapeHtml(String(c.val))}</span></span>`
-    ).join('')}</div>`;
-  }
-
-  // Delegação de clique para copiar os chips de dados da frota
-  els.divList.addEventListener('click', (e) => {
-    const chip = e.target.closest('.meta-chip');
-    if(!chip) return;
-    const texto = chip.dataset.copy;
-    if(!texto) return;
-    const valEl = chip.querySelector('.val');
-    const original = valEl.textContent;
-    const marcarCopiado = () => {
-      chip.classList.add('copiado');
-      valEl.textContent = 'Copiado!';
-      setTimeout(() => {
-        chip.classList.remove('copiado');
-        valEl.textContent = original;
-      }, 1100);
-    };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(texto).then(marcarCopiado).catch(() => {
-        alert('Não foi possível copiar automaticamente. Valor: ' + texto);
-      });
-    } else {
-      alert('Não foi possível copiar automaticamente. Valor: ' + texto);
-    }
-  });
-
-  function renderDivergencias(totalCount){
-    if(!ultimaComparacao) return;
-
-    const filialFilter = els.filterFilial.value;
-    const clienteFilter = els.filterCliente.value;
-    const q = els.search.value.trim().toLowerCase();
-
-    const divergenciasReais = ultimaComparacao.map(d => {
-      // Remove da lista de clientes da ATFS quem está na lista de ignorados (não emite ATF)
-      const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c)).filter(c => !isClienteIgnorado(c));
-
-      if (d.tipo === 'frota_nova') return { ...d, clientesAtfs };
-
-      const clientesRelacao = (d.clientesRelacao || []).map(c => normalizarCliente(c));
-      
-      const faltantesReais = clientesAtfs.filter(cliAtfs => {
-        return !clientesRelacao.some(cliRel => saoClientesEquivalentes(cliAtfs, cliRel));
-      });
-      
-      return { ...d, clientesAtfs, clientesFaltandoCorrigido: faltantesReais };
-    }).filter(d => {
-      // Frota nova cujo único cliente é ignorado deixa de ser divergência
-      if (d.tipo === 'frota_nova') return d.clientesAtfs.length > 0;
-      if (d.clientesFaltandoCorrigido.length === 0) return false;
-      return true;
-    });
-
-    const divergenciasFiltradas = divergenciasReais.filter(d => {
-      if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
-
-      // Filtro por card clicado no topo
-      if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false;
-      if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
-
-      const clientesPendentes = d.tipo === 'frota_nova' 
-        ? (d.clientesAtfs || []).map(normalizarCliente) 
-        : d.clientesFaltandoCorrigido;
-
-      if (clienteFilter !== 'TODOS') {
-        const clienteNorm = normalizarCliente(clienteFilter);
-        if (!clientesPendentes.some(c => saoClientesEquivalentes(c, clienteNorm))) return false;
-      }
-
-      if (q) {
-        const matchFrota = d.frota.toLowerCase().includes(q);
-        const matchCliente = clientesPendentes.some(c => c.toLowerCase().includes(q));
-        if (!matchFrota && !matchCliente) return false;
-      }
-
-      return true;
-    });
-
-    const totalDivs = divergenciasReais.filter(d => d.tipo !== 'frota_nova').length;
-    const totalNovas = divergenciasReais.filter(d => d.tipo === 'frota_nova').length;
-
-    els.stNovas.textContent = totalNovas;
-    els.stDivergencias.textContent = totalDivs;
-
-    updateBar('barNovas', totalNovas, totalCount);
-    updateBar('barDivergencias', totalDivs, totalCount);
-
-    if (divergenciasReais.length === 0) {
-      divergenciasParaExportar = [];
-      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
-      return;
-    }
-
-    if (divergenciasFiltradas.length === 0) {
-      divergenciasParaExportar = [];
-      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada para os filtros e buscas atuais.</div>';
-      return;
-    }
-
-    divergenciasParaExportar = divergenciasFiltradas;
-
-    els.divList.innerHTML = divergenciasFiltradas.map(d => {
-      if (d.tipo === 'frota_nova') {
-        const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
-        return `<div class="div-item novo">
-          <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
-          <div class="detalhe">Falta ATF: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
-          ${metaChipsHtml(d.dadosFrota)}
-        </div>`;
-      }
-      
-      const faltantesNorm = Array.from(new Set(d.clientesFaltandoCorrigido));
-      return `<div class="div-item dif">
-        <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge amber">Cliente diferente</span></div>
-        <div class="detalhe">Falta ATF: ${escapeHtml(faltantesNorm.join(', ') || '—')}</div>
-        ${metaChipsHtml(d.dadosFrota)}
-      </div>`;
-    }).join('');
-  }
-
-  // ---------------- Clique nos Cards do Topo (Filtros Interativos) ----------------
-  document.querySelectorAll('.stat[data-filter]').forEach(card => {
-    card.addEventListener('click', () => {
-      const filterType = card.dataset.filter;
-      
-      // Se clicar no mesmo card ativo, reseta para 'all' (Total de frotas)
-      if (activeCardFilter === filterType) {
-        activeCardFilter = 'all';
-      } else {
-        activeCardFilter = filterType;
-      }
-
-      // Direciona para a view correta
-      if (activeCardFilter === 'validadas') {
-        setViewMode('frotas');
-      } else if (activeCardFilter === 'all') {
-        setViewMode('frotas');
-      } else {
-        setViewMode('divergencias');
-      }
-
-      render();
+    mb.addEventListener('click', (e)=>{
+      if(e.target === mb) mb.classList.remove('open');
     });
   });
-
-  els.filterFilial.addEventListener('change', () => { refreshFilterOptions(); render(); });
-  els.filterCliente.addEventListener('change', () => { refreshFilterOptions(); render(); });
-  els.search.addEventListener('input', render);
-  els.btnRefresh.addEventListener('click', refreshDataSilent);
 
   loadData();
-})();
 </script>
 </body>
 </html>
