@@ -1470,33 +1470,26 @@ function tempoRelativo(data) {
         motivos.push({tipo:'cnh', label:'CNH divergente', detalhe:`relatório ${rel.cnh} · painel ${condutor.cnhNumero}`});
       }
 
-     const dtRel = parseBrDateStr(rel.validade);
-if(dtRel){
-  if(condutor.derVal){
-    if(condutor.derStatus === 'AGUARDANDO'){
-      if(condutor.derVal.getTime() < dtRel.getTime()){
-        motivos.push({tipo:'validade', label:'Validade desatualizada (aguardando DER)', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
+      const dtRel = parseBrDateStr(rel.validade);
+      if(dtRel && condutor.derVal){
+        if(condutor.derStatus === 'AGUARDANDO'){
+          // Condutor com envio ao DER marcado no painel: a validade do painel
+          // ainda pode estar "antiga" por natureza (é exatamente por isso que
+          // está aguardando). Só é divergência de verdade se o painel estiver
+          // com uma data ANTERIOR à do relCondutores — ou seja, o relatório já
+          // trouxe uma validade mais nova que o painel não recebeu.
+          if(condutor.derVal.getTime() < dtRel.getTime()){
+            motivos.push({tipo:'validade', label:'Validade desatualizada (aguardando DER)', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
+          }
+        } else if(dtRel.getTime() > condutor.derVal.getTime()){
+          // Só é divergência de verdade quando o relatório tem uma validade MAIS
+          // NOVA que o painel (ou seja, o painel ainda não recebeu essa atualização).
+          // Se o relatório estiver com uma data igual ou mais ANTIGA que o painel,
+          // não é erro — o painel simplesmente já está mais atualizado que o
+          // relCondutores.xlsx.
+          motivos.push({tipo:'validade', label:'Validade divergente', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
+        }
       }
-    } else if(dtRel.getTime() > condutor.derVal.getTime()){
-      motivos.push({tipo:'validade', label:'Validade divergente', detalhe:`relatório ${rel.validade} · painel ${fmtDate(condutor.derVal)}`});
-    }
-  } else {
-    // Painel sem nenhuma data cadastrada pra esse condutor — seja porque
-    // está aguardando confirmação do DER, seja por qualquer outro motivo.
-    // Só sinaliza quando o relatório já traz uma validade em dia (hoje ou
-    // no futuro): isso indica que o processo no DER já foi concluído (ou
-    // nunca esteve pendente de verdade) e o painel é que ficou desatualizado.
-    // Uma validade já vencida no relatório não gera aviso, porque nesse caso
-    // ainda faz sentido estar sem data enquanto se aguarda o novo documento.
-    const hoje = new Date(); hoje.setHours(0,0,0,0);
-    if(dtRel.getTime() >= hoje.getTime()){
-      const label = condutor.derStatus === 'AGUARDANDO'
-        ? 'Aguardando DER, mas relatório já tem validade'
-        : 'Validade ausente no painel';
-      motivos.push({tipo:'validade', label, detalhe:`relatório ${rel.validade} · painel sem data cadastrada`});
-    }
-  }
-}
 
       if(motivos.length){
         divergencias.push({
