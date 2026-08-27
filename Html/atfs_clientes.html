@@ -102,7 +102,12 @@
 
   .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:26px;}
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
-  .panel h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;}
+  .panel h3{font-family:var(--font-display);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+  .btn-copy-header{display:inline-flex;align-items:center;gap:5px;background:#eef1f7;color:var(--navy-800);border:1.5px solid var(--line);border-radius:7px;padding:4px 9px;font-size:11px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:background .15s,border-color .15s,transform .1s;}
+  .btn-copy-header:hover{background:#e2e7f2;border-color:var(--navy-700);}
+  .btn-copy-header:active{transform:scale(.96);}
+  .btn-copy-header.copiado{background:var(--green-soft);color:var(--green);border-color:var(--green);}
+  .btn-copy-header svg{width:13px;height:13px;flex:none;}
   .panel .sub{font-size:12px;color:var(--slate-600);margin:0;}
   .div-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
   .div-item.novo{border-left:4px solid var(--amber);}
@@ -263,7 +268,12 @@
     <div class="panel" id="panelDivergencias">
       <div class="panel-head">
         <div>
-          <h3>Divergências com a Relação de Frota</h3>
+          <h3>Divergências com a Relação de Frota
+            <button class="btn-copy-header" id="btnCopiarDivTabela" title="Copiar tabela para colar no Excel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span id="btnCopiarDivTabelaTexto">Copiar tabela</span>
+            </button>
+          </h3>
           <p class="sub">Comparação priorizando as atualizações da planilha ATFS frente à aba "ATF's" da RELAÇÃO DE FROTA VMG 2026</p>
         </div>
       </div>
@@ -356,6 +366,7 @@
   let viewMode = 'divergencias';
   let initialTagsStr = '';
   let activeCardFilter = 'all'; // 'all' vem selecionado por padrão
+  let divergenciasParaExportar = []; // última lista renderizada, usada pelo botão "Copiar tabela"
 
   function setViewMode(mode) {
     viewMode = mode;
@@ -399,6 +410,15 @@
 
   function escapeHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // --- CLIENTES QUE NÃO EMITEM ATF (ignorados em toda a comparação) ---
+  const CLIENTES_IGNORADOS = ['ADLER', 'LOJA ELETRICA', 'PONTO FRIO', 'DCML', 'ATMOSFERA', 'JAT']
+    .map(c => normalizarCliente(c));
+
+  function isClienteIgnorado(nome) {
+    const norm = normalizarCliente(nome);
+    return CLIENTES_IGNORADOS.some(ign => saoClientesEquivalentes(norm, ign));
   }
 
   // --- REGRA DE EXCEÇÃO INTELIGENTE (SINÔNIMOS) ---
@@ -512,7 +532,7 @@
 
   function clientesDaLinha(r){
     if(!r || !r.cliente) return [];
-    const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean);
+    const lista = (r.cliente || '').split(',').map(c => normalizarCliente(c)).filter(Boolean).filter(c => !isClienteIgnorado(c));
     return Array.from(new Set(lista));
   }
 
@@ -939,6 +959,48 @@
     }
   });
 
+  // ---------------- Copiar tabela de Divergências (formato Excel) ----------------
+  function gerarLinhasExcelDivergencias(){
+    const cabecalho = ['Frota', 'Filial', 'Situação', 'Cliente(s)', 'Lotação', 'Placa', 'Ano/Modelo', 'Chassi', 'Renavam'];
+    const linhas = divergenciasParaExportar.map(d => {
+      const situacao = d.tipo === 'frota_nova' ? 'Frota nova' : 'Cliente diferente';
+      const clientes = d.tipo === 'frota_nova'
+        ? Array.from(new Set(d.clientesAtfs || [])).join(', ')
+        : Array.from(new Set(d.clientesFaltandoCorrigido || [])).join(', ');
+      const df = d.dadosFrota || {};
+      return [d.frota, d.filial, situacao, clientes, df.lotacao || '', df.placa || '', df.anoModelo || '', df.chassi || '', df.renavam || ''];
+    });
+    return [cabecalho, ...linhas];
+  }
+
+  const btnCopiarDivTabela = document.getElementById('btnCopiarDivTabela');
+  const btnCopiarDivTabelaTexto = document.getElementById('btnCopiarDivTabelaTexto');
+  btnCopiarDivTabela.addEventListener('click', () => {
+    if(!divergenciasParaExportar || divergenciasParaExportar.length === 0){
+      alert('Não há divergências para copiar no momento.');
+      return;
+    }
+    const texto = gerarLinhasExcelDivergencias().map(linha => linha.join('\t')).join('\n');
+
+    const marcarCopiado = () => {
+      const original = btnCopiarDivTabelaTexto.textContent;
+      btnCopiarDivTabela.classList.add('copiado');
+      btnCopiarDivTabelaTexto.textContent = 'Copiado!';
+      setTimeout(() => {
+        btnCopiarDivTabela.classList.remove('copiado');
+        btnCopiarDivTabelaTexto.textContent = original;
+      }, 1200);
+    };
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(texto).then(marcarCopiado).catch(() => {
+        alert('Não foi possível copiar automaticamente a tabela.');
+      });
+    } else {
+      alert('Não foi possível copiar automaticamente a tabela.');
+    }
+  });
+
   function metaChipsHtml(dadosFrota){
     if(!dadosFrota) return '';
     const campos = [
@@ -987,18 +1049,22 @@
     const q = els.search.value.trim().toLowerCase();
 
     const divergenciasReais = ultimaComparacao.map(d => {
-      if (d.tipo === 'frota_nova') return d;
+      // Remove da lista de clientes da ATFS quem está na lista de ignorados (não emite ATF)
+      const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c)).filter(c => !isClienteIgnorado(c));
 
-      const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c));
+      if (d.tipo === 'frota_nova') return { ...d, clientesAtfs };
+
       const clientesRelacao = (d.clientesRelacao || []).map(c => normalizarCliente(c));
       
       const faltantesReais = clientesAtfs.filter(cliAtfs => {
         return !clientesRelacao.some(cliRel => saoClientesEquivalentes(cliAtfs, cliRel));
       });
       
-      return { ...d, clientesFaltandoCorrigido: faltantesReais };
+      return { ...d, clientesAtfs, clientesFaltandoCorrigido: faltantesReais };
     }).filter(d => {
-      if (d.tipo !== 'frota_nova' && d.clientesFaltandoCorrigido.length === 0) return false;
+      // Frota nova cujo único cliente é ignorado deixa de ser divergência
+      if (d.tipo === 'frota_nova') return d.clientesAtfs.length > 0;
+      if (d.clientesFaltandoCorrigido.length === 0) return false;
       return true;
     });
 
@@ -1037,21 +1103,25 @@
     updateBar('barDivergencias', totalDivs, totalCount);
 
     if (divergenciasReais.length === 0) {
+      divergenciasParaExportar = [];
       els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
       return;
     }
 
     if (divergenciasFiltradas.length === 0) {
+      divergenciasParaExportar = [];
       els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada para os filtros e buscas atuais.</div>';
       return;
     }
+
+    divergenciasParaExportar = divergenciasFiltradas;
 
     els.divList.innerHTML = divergenciasFiltradas.map(d => {
       if (d.tipo === 'frota_nova') {
         const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
         return `<div class="div-item novo">
           <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
-          <div class="detalhe">Não existe na Relação de Frota: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
+          <div class="detalhe">Falta ATF: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
           ${metaChipsHtml(d.dadosFrota)}
         </div>`;
       }
