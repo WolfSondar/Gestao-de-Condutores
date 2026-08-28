@@ -1141,7 +1141,11 @@
 
     const totalNovas = baseFiltradaPorTopo.filter(d => d.tipo === 'frota_nova' && d.pendentes.length > 0).length;
     const totalDivs = baseFiltradaPorTopo.filter(d => d.tipo !== 'frota_nova' && d.pendentes.length > 0).length;
-    const totalAguardando = baseFiltradaPorTopo.filter(d => d.pendentes.length === 0).length;
+    // "Aguardando DER" conta por CLIENTE enviado (não por frota): uma frota com
+    // 5 clientes enviados entra como +5. Um cliente conta aqui mesmo que a
+    // frota ainda tenha outros clientes pendentes (ex.: falta gerar a ATF de
+    // outro cliente da mesma frota) — o que importa é o cliente já enviado.
+    const totalAguardando = baseFiltradaPorTopo.reduce((soma, d) => soma + d.enviados.length, 0);
 
     els.stNovas.textContent = totalNovas;
     els.stDivergencias.textContent = totalDivs;
@@ -1162,7 +1166,10 @@
       const totalmenteEnviado = d.pendentes.length === 0;
 
       if (activeCardFilter === 'aguardando') {
-        if (!totalmenteEnviado) return false;
+        // Entra em "Aguardando DER" qualquer frota que tenha AO MENOS UM
+        // cliente já enviado, mesmo que outros clientes da mesma frota ainda
+        // estejam pendentes (ex.: falta gerar a ATF de outro cliente).
+        if (d.enviados.length === 0) return false;
       } else {
         // Frotas 100% enviadas (nada mais pendente) saem das listas normais
         if (totalmenteEnviado) return false;
