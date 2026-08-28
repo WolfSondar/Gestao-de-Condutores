@@ -12,6 +12,7 @@
     --amber:#f2a93b; --amber-soft:#fdf1dd;
     --green:#2bad7d; --green-soft:#e4f7ef;
     --red:#e5484d; --red-soft:#fde9ea;
+    --blue:#2f7bee; --blue-soft:#e6f0fe;
     --slate-900:#1b2433; --slate-600:#5b6577; --slate-400:#93a0b3;
     --line:#e4e8f0; --bg:#f4f6fb; --card:#ffffff; --radius:14px;
     --font-display:'Space Grotesk', sans-serif; --font-body:'Inter', sans-serif; --font-mono:'JetBrains Mono', monospace;
@@ -45,7 +46,7 @@
     animation:shimmer 1.4s linear infinite;
     border-radius:8px;
   }
-  .skel-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:26px;}
+  .skel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
   .skel-stat{height:104px;border-radius:var(--radius);}
   .skel-row{height:44px;border-radius:8px;margin-bottom:8px;}
 
@@ -54,7 +55,7 @@
   .state-msg strong{display:block;font-family:var(--font-display);font-size:18px;color:var(--slate-900);margin-bottom:8px;}
   .hidden{display:none !important;}
 
-  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
   .stat{background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;border:1.5px solid var(--line);position:relative;overflow:hidden;box-shadow:0 12px 30px rgba(15,37,68,.10);cursor:pointer;transition:transform .15s, border-color .15s, box-shadow .15s;}
   .stat:hover{transform:translateY(-2px);border-color:var(--navy-700);box-shadow:0 16px 36px rgba(15,37,68,.15);}
   .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.2);background:#f8faff;}
@@ -69,6 +70,21 @@
   .stat.red .v {color:var(--red);} .stat.red .bar i {background:var(--red);}
   .stat.amber .v {color:#c07f16;} .stat.amber .bar i {background:var(--amber);}
   .stat.blue .v {color:var(--navy-700);} .stat.blue .bar i {background:var(--navy-700);}
+
+  /* Gráfico de distribuição (Total x Válidas x Divergências x Aguardando DER) */
+  .chart-card{background:var(--card);border-radius:var(--radius);padding:20px 22px 18px;border:1.5px solid var(--line);box-shadow:0 12px 30px rgba(15,37,68,.10);margin:0 auto 26px;max-width:1320px;}
+  .chart-card-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--slate-900);margin-bottom:16px;}
+  .chart-row{display:grid;grid-template-columns:160px 1fr 46px;align-items:center;gap:14px;margin-bottom:12px;}
+  .chart-row:last-child{margin-bottom:0;}
+  .chart-row .lbl{font-family:var(--font-mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--slate-600);}
+  .chart-row .track{height:14px;border-radius:7px;background:var(--bg);overflow:hidden;border:1px solid var(--line);}
+  .chart-row .track i{display:block;height:100%;border-radius:7px;transition:width .5s ease;width:0%;}
+  .chart-row .val{font-family:var(--font-display);font-weight:700;font-size:14px;text-align:right;color:var(--slate-900);}
+  .chart-row.total .track i{background:var(--navy-700);}
+  .chart-row.green .track i{background:var(--green);}
+  .chart-row.red .track i{background:var(--red);}
+  .chart-row.blue .track i{background:var(--blue);}
+  @media (max-width:700px){ .chart-row{grid-template-columns:110px 1fr 40px;gap:8px;} }
 
   /* Chips de status "por cliente" (pendente / enviado) */
   .clientes-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
@@ -118,9 +134,10 @@
   .btn-copy-header.copiado{background:var(--green-soft);color:var(--green);border-color:var(--green);}
   .btn-copy-header svg{width:13px;height:13px;flex:none;}
   .panel .sub{font-size:12px;color:var(--slate-600);margin:0;}
-  .div-item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
+  .div-item{position:relative;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:8px;font-size:13px;}
   .div-item.novo{border-left:4px solid var(--amber);}
   .div-item.dif{border-left:4px solid var(--red);}
+  .tag-novo{position:absolute;top:8px;right:10px;background:var(--amber);color:#fff;font-family:var(--font-mono);font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;padding:3px 8px;border-radius:20px;line-height:1;}
   .div-item .row1{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
   .div-item .frota-tag{font-family:var(--font-mono);font-weight:700;}
   .div-item .detalhe{color:var(--slate-600);font-size:12.5px;}
@@ -183,7 +200,7 @@
   .modal-msg.ok{background:var(--green-soft);color:var(--green);}
   .modal-msg.err{background:var(--red-soft);color:var(--red);}
 
-  @media (max-width:1100px){ .stats,.skel-stats{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:1100px){ .stats,.skel-stats{grid-template-columns:repeat(2,1fr);} }
   @media (max-width:700px){ .road{padding:26px 20px 26px;} main{padding:22px 16px 50px;} .stats,.skel-stats{grid-template-columns:repeat(1,1fr);} }
 </style>
 </head>
@@ -212,7 +229,6 @@
       <div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div>
-      <div class="skel skel-stat"></div>
     </div>
     <div class="skel skel-row" style="width:100%;height:44px;"></div>
     <div class="skel skel-row" style="width:100%;"></div>
@@ -237,20 +253,41 @@
         <div class="v" id="stValidadas">0</div>
         <div class="bar"><i id="barValidadas" style="width:0%"></i></div>
       </div>
-      <div class="stat red" data-filter="divergencias" title="Filtrar frotas com divergências">
+      <div class="stat red" data-filter="divergencias" title="Filtrar frotas com divergências (inclui frotas novas)">
         <div class="k">Divergências</div>
         <div class="v" id="stDivergencias">0</div>
         <div class="bar"><i id="barDivergencias" style="width:0%"></i></div>
-      </div>
-      <div class="stat amber" data-filter="novas" title="Filtrar frotas novas">
-        <div class="k">Frotas novas</div>
-        <div class="v" id="stNovas">0</div>
-        <div class="bar"><i id="barNovas" style="width:0%"></i></div>
       </div>
       <div class="stat blue" data-filter="aguardando" title="Filtrar frotas com ATF enviado, aguardando o DER">
         <div class="k">Aguardando DER</div>
         <div class="v" id="stAguardando">0</div>
         <div class="bar"><i id="barAguardando" style="width:0%"></i></div>
+      </div>
+    </section>
+
+    <section class="chart-card" id="chartCard">
+      <div class="chart-card-title">Distribuição das Frotas</div>
+      <div class="chart-rows">
+        <div class="chart-row total">
+          <span class="lbl">Total de frotas</span>
+          <span class="track"><i id="chartBarTotal" style="width:0%"></i></span>
+          <span class="val" id="chartValTotal">0</span>
+        </div>
+        <div class="chart-row green">
+          <span class="lbl">ATFs válidas</span>
+          <span class="track"><i id="chartBarValidadas" style="width:0%"></i></span>
+          <span class="val" id="chartValValidadas">0</span>
+        </div>
+        <div class="chart-row red">
+          <span class="lbl">Divergências</span>
+          <span class="track"><i id="chartBarDivergencias" style="width:0%"></i></span>
+          <span class="val" id="chartValDivergencias">0</span>
+        </div>
+        <div class="chart-row blue">
+          <span class="lbl">Aguardando DER</span>
+          <span class="track"><i id="chartBarAguardando" style="width:0%"></i></span>
+          <span class="val" id="chartValAguardando">0</span>
+        </div>
       </div>
     </section>
 
@@ -368,7 +405,6 @@
     stTotal: document.getElementById('stTotal'),
     stValidadas: document.getElementById('stValidadas'),
     stDivergencias: document.getElementById('stDivergencias'),
-    stNovas: document.getElementById('stNovas'),
     stAguardando: document.getElementById('stAguardando'),
   };
 
@@ -729,7 +765,22 @@
 
     els.tfootMsg.textContent = rows.length === 0 ? 'Nenhuma frota encontrada com os filtros atuais.' : '';
 
-    renderDivergencias(totalCount);
+    const resumoDivergencias = renderDivergencias(totalCount);
+    updateMiniChart(frotasBase.length, validadasCount, resumoDivergencias.totalDivergencias, resumoDivergencias.totalAguardando);
+  }
+
+  function updateMiniChart(total, validadas, divergencias, aguardando){
+    const maxVal = Math.max(total, validadas, divergencias, aguardando, 1);
+    const setRow = (barId, valId, val) => {
+      const bar = document.getElementById(barId);
+      const valEl = document.getElementById(valId);
+      if (bar) bar.style.width = Math.min(100, (val / maxVal) * 100) + '%';
+      if (valEl) valEl.textContent = val;
+    };
+    setRow('chartBarTotal', 'chartValTotal', total);
+    setRow('chartBarValidadas', 'chartValValidadas', validadas);
+    setRow('chartBarDivergencias', 'chartValDivergencias', divergencias);
+    setRow('chartBarAguardando', 'chartValAguardando', aguardando);
   }
 
   // ---------------- Sistema de Tags (Chips) ----------------
@@ -1123,6 +1174,7 @@
     const filialFilter = els.filterFilial.value;
     const clienteFilter = els.filterCliente.value;
     const q = els.search.value.trim().toLowerCase();
+    const clienteFilterNorm = clienteFilter !== 'TODOS' ? normalizarCliente(clienteFilter) : null;
 
     const todas = divergenciasProcessadas();
 
@@ -1131,50 +1183,63 @@
     const baseFiltradaPorTopo = todas.filter(d => {
       if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
 
-      if (clienteFilter !== 'TODOS') {
-        const clienteNorm = normalizarCliente(clienteFilter);
+      if (clienteFilterNorm) {
         const clientesEnvolvidos = [...d.pendentes, ...d.enviados];
-        if (!clientesEnvolvidos.some(c => saoClientesEquivalentes(c, clienteNorm))) return false;
+        if (!clientesEnvolvidos.some(c => saoClientesEquivalentes(c, clienteFilterNorm))) return false;
       }
       return true;
     });
 
-    const totalNovas = baseFiltradaPorTopo.filter(d => d.tipo === 'frota_nova' && d.pendentes.length > 0).length;
-    const totalDivs = baseFiltradaPorTopo.filter(d => d.tipo !== 'frota_nova' && d.pendentes.length > 0).length;
-    // "Aguardando DER" conta por CLIENTE enviado (não por frota): uma frota com
-    // 5 clientes enviados entra como +5. Um cliente conta aqui mesmo que a
-    // frota ainda tenha outros clientes pendentes (ex.: falta gerar a ATF de
-    // outro cliente da mesma frota) — o que importa é o cliente já enviado.
-    const totalAguardando = baseFiltradaPorTopo.reduce((soma, d) => soma + d.enviados.length, 0);
+    // Quando há um cliente específico selecionado no filtro do topo, o status
+    // (divergência ou aguardando DER) precisa ser calculado PELO CLIENTE, não
+    // pela frota inteira. Ex.: uma frota pode ter o cliente X pendente e o
+    // cliente Y já enviado — filtrando por Y, ela deve contar/aparecer só em
+    // "Aguardando DER", nunca em "Divergências" (mesmo que X ainda esteja
+    // pendente), e vice-versa filtrando por X.
+    function pendentesRelevantes(d) {
+      return clienteFilterNorm ? d.pendentes.filter(c => saoClientesEquivalentes(c, clienteFilterNorm)) : d.pendentes;
+    }
+    function enviadosRelevantes(d) {
+      return clienteFilterNorm ? d.enviados.filter(c => saoClientesEquivalentes(c, clienteFilterNorm)) : d.enviados;
+    }
 
-    els.stNovas.textContent = totalNovas;
-    els.stDivergencias.textContent = totalDivs;
+    // "Divergências" agora é um card único que reúne frotas novas (tipo
+    // frota_nova) e divergências normais (cliente diferente) — ambas contam
+    // por terem pendência (relevante ao cliente filtrado, se houver).
+    const totalDivergenciasUnificado = baseFiltradaPorTopo.filter(d => pendentesRelevantes(d).length > 0).length;
+    // "Aguardando DER" conta por CLIENTE enviado (não por frota): uma frota com
+    // 5 clientes enviados entra como +5. E, com um cliente filtrado, só soma o
+    // que for daquele cliente especificamente.
+    const totalAguardando = baseFiltradaPorTopo.reduce((soma, d) => soma + enviadosRelevantes(d).length, 0);
+
+    els.stDivergencias.textContent = totalDivergenciasUnificado;
     els.stAguardando.textContent = totalAguardando;
 
-    updateBar('barNovas', totalNovas, totalCount);
-    updateBar('barDivergencias', totalDivs, totalCount);
+    updateBar('barDivergencias', totalDivergenciasUnificado, totalCount);
     updateBar('barAguardando', totalAguardando, totalCount);
+
+    const resumo = { totalDivergencias: totalDivergenciasUnificado, totalAguardando };
 
     if (todas.length === 0) {
       divergenciasParaExportar = [];
       els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
-      return;
+      return resumo;
     }
 
-    // Agora aplica o card ativo (novas/divergencias/aguardando) + busca
+    // Agora aplica o card ativo (divergencias/aguardando) + busca
     const divergenciasFiltradas = baseFiltradaPorTopo.filter(d => {
-      const totalmenteEnviado = d.pendentes.length === 0;
+      const pendRel = pendentesRelevantes(d);
+      const envRel = enviadosRelevantes(d);
+      const resolvidoParaEsteFiltro = pendRel.length === 0;
 
       if (activeCardFilter === 'aguardando') {
-        // Entra em "Aguardando DER" qualquer frota que tenha AO MENOS UM
-        // cliente já enviado, mesmo que outros clientes da mesma frota ainda
-        // estejam pendentes (ex.: falta gerar a ATF de outro cliente).
-        if (d.enviados.length === 0) return false;
+        // Entra em "Aguardando DER" se o cliente relevante (ou algum cliente,
+        // sem filtro) já foi enviado — mesmo que a frota tenha OUTRO cliente
+        // ainda pendente.
+        if (envRel.length === 0) return false;
       } else {
-        // Frotas 100% enviadas (nada mais pendente) saem das listas normais
-        if (totalmenteEnviado) return false;
-        if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false;
-        if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
+        // Frotas (ou o cliente filtrado) já 100% enviadas saem das listas normais
+        if (resolvidoParaEsteFiltro) return false;
       }
 
       if (q) {
@@ -1190,25 +1255,30 @@
     if (divergenciasFiltradas.length === 0) {
       divergenciasParaExportar = [];
       els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhum item encontrado para os filtros e buscas atuais.</div>';
-      return;
+      return resumo;
     }
 
     divergenciasParaExportar = divergenciasFiltradas;
 
     els.divList.innerHTML = divergenciasFiltradas.map(d => {
-      const totalmenteEnviado = d.pendentes.length === 0;
+      const pendRel = pendentesRelevantes(d);
+      const totalmenteEnviado = pendRel.length === 0;
       const classeExtra = totalmenteEnviado ? 'aguardando' : (d.tipo === 'frota_nova' ? 'novo' : 'dif');
+      const tagNovo = d.tipo === 'frota_nova' ? '<span class="tag-novo">NOVO</span>' : '';
 
       const chipsPendentes = d.pendentes.map(c => clienteCheckboxHtml(d, c, false)).join('');
       const chipsEnviados = d.enviados.map(c => clienteCheckboxHtml(d, c, true)).join('');
 
       return `<div class="div-item ${classeExtra}">
+        ${tagNovo}
         <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span></div>
         ${d.pendentes.length > 0 ? `<div class="detalhe">Falta ATF:</div><div class="clientes-list">${chipsPendentes}</div>` : ''}
         ${d.enviados.length > 0 ? `<div class="detalhe" style="margin-top:8px;">Já enviado (aguardando DER):</div><div class="clientes-list">${chipsEnviados}</div>` : ''}
         ${metaChipsHtml(d.dadosFrota)}
       </div>`;
     }).join('');
+
+    return resumo;
   }
 
   function clienteCheckboxHtml(d, cliente, enviado){
