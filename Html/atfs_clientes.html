@@ -45,7 +45,7 @@
     animation:shimmer 1.4s linear infinite;
     border-radius:8px;
   }
-  .skel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .skel-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:26px;}
   .skel-stat{height:104px;border-radius:var(--radius);}
   .skel-row{height:44px;border-radius:8px;margin-bottom:8px;}
 
@@ -54,7 +54,7 @@
   .state-msg strong{display:block;font-family:var(--font-display);font-size:18px;color:var(--slate-900);margin-bottom:8px;}
   .hidden{display:none !important;}
 
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:-18px auto 26px;max-width:1320px;position:relative;z-index:2;}
   .stat{background:var(--card);border-radius:var(--radius);padding:16px 16px 14px;border:1.5px solid var(--line);position:relative;overflow:hidden;box-shadow:0 12px 30px rgba(15,37,68,.10);cursor:pointer;transition:transform .15s, border-color .15s, box-shadow .15s;}
   .stat:hover{transform:translateY(-2px);border-color:var(--navy-700);box-shadow:0 16px 36px rgba(15,37,68,.15);}
   .stat.active{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(30,66,120,.2);background:#f8faff;}
@@ -68,6 +68,13 @@
   .stat.green .v {color:var(--green);} .stat.green .bar i {background:var(--green);}
   .stat.red .v {color:var(--red);} .stat.red .bar i {background:var(--red);}
   .stat.amber .v {color:#c07f16;} .stat.amber .bar i {background:var(--amber);}
+  .stat.blue .v {color:var(--navy-700);} .stat.blue .bar i {background:var(--navy-700);}
+
+  /* Checkbox "Enviado" */
+  .enviado-check{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--slate-600);cursor:pointer;user-select:none;flex:none;}
+  .enviado-check input[type="checkbox"]{width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin:0;}
+  .enviado-check:hover{color:var(--navy-900);}
+  .div-item.aguardando{border-left:4px solid var(--navy-700);background:#f7f9fd;}
 
   .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
   .search-wrap{position:relative;flex:1;min-width:220px;}
@@ -174,7 +181,7 @@
   .modal-msg.ok{background:var(--green-soft);color:var(--green);}
   .modal-msg.err{background:var(--red-soft);color:var(--red);}
 
-  @media (max-width:1100px){ .stats,.skel-stats{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:1100px){ .stats,.skel-stats{grid-template-columns:repeat(3,1fr);} }
   @media (max-width:700px){ .road{padding:26px 20px 26px;} main{padding:22px 16px 50px;} .stats,.skel-stats{grid-template-columns:repeat(1,1fr);} }
 </style>
 </head>
@@ -199,6 +206,7 @@
 <main>
   <div id="emptyState" class="state-msg" style="text-align:left;padding:28px 0;">
     <div class="skel-stats">
+      <div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div>
       <div class="skel skel-stat"></div>
@@ -237,6 +245,11 @@
         <div class="v" id="stNovas">0</div>
         <div class="bar"><i id="barNovas" style="width:0%"></i></div>
       </div>
+      <div class="stat blue" data-filter="aguardando" title="Filtrar frotas com ATF enviado, aguardando o DER">
+        <div class="k">Aguardando DER</div>
+        <div class="v" id="stAguardando">0</div>
+        <div class="bar"><i id="barAguardando" style="width:0%"></i></div>
+      </div>
     </section>
 
     <div class="toolbar">
@@ -245,8 +258,6 @@
       </div>
       <button class="btn btn-primary" id="btnEditar">Editar cliente da frota</button>
       <button class="btn btn-ghost" id="btnNova">+ Nova frota</button>
-      <button class="btn btn-ghost" id="btnComparar">Verificar divergências</button>
-      
       <button class="btn btn-ghost btn-toggle-view" id="btnToggleView" style="display:none;">Ver Lista de Frotas</button>
     </div>
 
@@ -329,7 +340,7 @@
 <script>
 (function(){
   // ============== CONFIGURAÇÃO — preencha após publicar o Apps Script ==============
-  const API_URL = 'https://script.google.com/macros/s/AKfycbxVYdIEWJJWCmBc5wJlDZyjHVKZgMixd7iyfpXH7ilu5sMBbBQkSgkyFI6AxI7t40h-xw/exec';
+  const API_URL = 'https://script.google.com/macros/s/AKfycbzN8jZZoxqQ5NLIKbxiAWuxkjBXStd94RL7S_53vUEvVBWLuIq480sI71XNWO4V0a4ArA/exec';
   const TOKEN = 'TROQUE-ESTA-CHAVE-SECRETA';
   // ====================================================================================
 
@@ -349,7 +360,6 @@
     btnRefresh: document.getElementById('btnRefresh'),
     btnEditar: document.getElementById('btnEditar'),
     btnNova: document.getElementById('btnNova'),
-    btnComparar: document.getElementById('btnComparar'),
     btnToggleView: document.getElementById('btnToggleView'),
     panelDivergencias: document.getElementById('panelDivergencias'),
     divList: document.getElementById('divList'),
@@ -357,6 +367,7 @@
     stValidadas: document.getElementById('stValidadas'),
     stDivergencias: document.getElementById('stDivergencias'),
     stNovas: document.getElementById('stNovas'),
+    stAguardando: document.getElementById('stAguardando'),
   };
 
   let allFrotas = [];
@@ -420,6 +431,17 @@
     return CLIENTES_IGNORADOS.some(ign => saoClientesEquivalentes(norm, ign));
   }
 
+  // Uma frota é irrelevante para o sistema quando ELA TEM cliente(s) cadastrado(s),
+  // mas TODOS eles são clientes que não emitem ATF (ex.: só tem Adler). Nesse caso
+  // ela não deve contar como frota em lugar nenhum do painel.
+  // Frotas sem nenhum cliente cadastrado continuam existindo normalmente (ainda
+  // precisam ser preenchidas).
+  function isFrotaIrrelevante(r) {
+    const bruta = ((r && r.cliente) || '').split(',').map(c => c.trim()).filter(Boolean);
+    if (bruta.length === 0) return false;
+    return bruta.every(c => isClienteIgnorado(c));
+  }
+
   // --- REGRA DE EXCEÇÃO INTELIGENTE (SINÔNIMOS) ---
   function saoClientesEquivalentes(a, b) {
     if (!a || !b) return false;
@@ -480,7 +502,7 @@
       ]);
 
       filiais = rFiliais.filiais;
-      allFrotas = rFrotas.frotas;
+      allFrotas = rFrotas.frotas.filter(r => !isFrotaIrrelevante(r));
       ultimaComparacao = rComp.divergencias;
 
       populaFiliaisSelects();
@@ -510,7 +532,7 @@
       ]);
 
       filiais = rFiliais.filiais;
-      allFrotas = rFrotas.frotas;
+      allFrotas = rFrotas.frotas.filter(r => !isFrotaIrrelevante(r));
       ultimaComparacao = rComp.divergencias;
 
       populaFiliaisSelects();
@@ -569,15 +591,23 @@
     els.filterCliente.value = opcoesClientes.includes(clienteAtual) ? clienteAtual : 'TODOS';
   }
 
-  function frotasFiltradas(){
+  // Frotas filtradas apenas pelos seletores de Filial/Cliente do topo (sem busca,
+  // sem o card ativo). É a base usada para os números dos cards em tempo real.
+  function frotasBaseFiltradas(){
     const filial = els.filterFilial.value;
     const cliente = els.filterCliente.value;
-    const q = els.search.value.trim().toLowerCase();
-    
+
     return allFrotas.filter(r=>{
       if(filial !== 'TODOS' && r.filial !== filial) return false;
       if(cliente !== 'TODOS' && !linhaTemCliente(r, cliente)) return false;
-      
+      return true;
+    });
+  }
+
+  function frotasFiltradas(){
+    const q = els.search.value.trim().toLowerCase();
+
+    return frotasBaseFiltradas().filter(r=>{
       const clientesStr = clientesDaLinha(r).join(', ').toLowerCase();
       if(q && !(r.frota.toLowerCase().includes(q) || clientesStr.includes(q) || (r.cliente||'').toLowerCase().includes(q))) return false;
       
@@ -624,11 +654,12 @@
   function render(){
     syncActiveCards();
     const rows = frotasFiltradas();
-    const totalCount = allFrotas.length || 1;
-    els.stTotal.textContent = allFrotas.length;
+    const frotasBase = frotasBaseFiltradas(); // respeita filial/cliente selecionados no topo
+    const totalCount = frotasBase.length || 1;
+    els.stTotal.textContent = frotasBase.length;
 
     let validadasCount = 0;
-    allFrotas.forEach(r => {
+    frotasBase.forEach(r => {
       const arrReg = clientesDaLinha(r);
       if(arrReg.length === 0) return;
       
@@ -940,29 +971,11 @@
     mb.addEventListener('click', (e)=>{ if(e.target === mb) mb.classList.remove('open'); });
   });
 
-  // ---------------- Comparação / divergências ----------------
-  document.getElementById('btnComparar').addEventListener('click', async ()=>{
-    els.btnComparar.disabled = true;
-    els.btnComparar.textContent = 'Verificando…';
-    try{
-      const r = await apiGet('comparar');
-      ultimaComparacao = r.divergencias;
-      activeCardFilter = 'all';
-      setViewMode('divergencias'); 
-      render();
-    }catch(err){
-      alert('Erro ao comparar: ' + err.message);
-    }finally{
-      els.btnComparar.disabled = false;
-      els.btnComparar.textContent = 'Verificar divergências';
-    }
-  });
-
   // ---------------- Copiar tabela de Divergências (formato Excel) ----------------
   function gerarLinhasExcelDivergencias(){
     const cabecalho = ['Frota', 'Filial', 'Situação', 'Cliente(s)', 'Lotação', 'Placa', 'Ano/Modelo', 'Chassi', 'Renavam'];
     const linhas = divergenciasParaExportar.map(d => {
-      const situacao = d.tipo === 'frota_nova' ? 'Frota nova' : 'Cliente diferente';
+      const situacao = d.enviado ? 'Aguardando DER' : (d.tipo === 'frota_nova' ? 'Frota nova' : 'Cliente diferente');
       const clientes = d.tipo === 'frota_nova'
         ? Array.from(new Set(d.clientesAtfs || [])).join(', ')
         : Array.from(new Set(d.clientesFaltandoCorrigido || [])).join(', ');
@@ -1015,6 +1028,27 @@
     ).join('')}</div>`;
   }
 
+  // Marcar/desmarcar "Enviado" (grava na coluna C da ATFS e move o item para Aguardando DER)
+  els.divList.addEventListener('change', async (e) => {
+    const cb = e.target.closest('input[data-enviado-toggle]');
+    if(!cb) return;
+    const [filial, frota] = cb.dataset.enviadoToggle.split('|');
+    const novoValor = cb.checked;
+    cb.disabled = true;
+    try{
+      await apiPost({ action: 'marcarEnviado', filial, frota, enviado: novoValor });
+      if (ultimaComparacao) {
+        const item = ultimaComparacao.find(d => d.filial === filial && String(d.frota) === String(frota));
+        if (item) item.enviado = novoValor;
+      }
+      render();
+    }catch(err){
+      alert('Erro ao atualizar status de envio: ' + err.message);
+      cb.checked = !novoValor;
+      cb.disabled = false;
+    }
+  });
+
   // Delegação de clique para copiar os chips de dados da frota
   els.divList.addEventListener('click', (e) => {
     const chip = e.target.closest('.meta-chip');
@@ -1040,50 +1074,81 @@
     }
   });
 
-  function renderDivergencias(totalCount){
-    if(!ultimaComparacao) return;
-
-    const filialFilter = els.filterFilial.value;
-    const clienteFilter = els.filterCliente.value;
-    const q = els.search.value.trim().toLowerCase();
-
-    const divergenciasReais = ultimaComparacao.map(d => {
-      // Remove da lista de clientes da ATFS quem está na lista de ignorados (não emite ATF)
+  // Normaliza a lista bruta vinda de "comparar", removendo clientes ignorados
+  // e mantendo apenas divergências reais (independente de filtros de tela).
+  function divergenciasProcessadas(){
+    if(!ultimaComparacao) return [];
+    return ultimaComparacao.map(d => {
       const clientesAtfs = (d.clientesAtfs || []).map(c => normalizarCliente(c)).filter(c => !isClienteIgnorado(c));
+      const enviado = !!d.enviado;
 
-      if (d.tipo === 'frota_nova') return { ...d, clientesAtfs };
+      if (d.tipo === 'frota_nova') return { ...d, clientesAtfs, enviado };
 
       const clientesRelacao = (d.clientesRelacao || []).map(c => normalizarCliente(c));
-      
       const faltantesReais = clientesAtfs.filter(cliAtfs => {
         return !clientesRelacao.some(cliRel => saoClientesEquivalentes(cliAtfs, cliRel));
       });
-      
-      return { ...d, clientesAtfs, clientesFaltandoCorrigido: faltantesReais };
+
+      return { ...d, clientesAtfs, clientesFaltandoCorrigido: faltantesReais, enviado };
     }).filter(d => {
       // Frota nova cujo único cliente é ignorado deixa de ser divergência
       if (d.tipo === 'frota_nova') return d.clientesAtfs.length > 0;
       if (d.clientesFaltandoCorrigido.length === 0) return false;
       return true;
     });
+  }
 
-    const divergenciasFiltradas = divergenciasReais.filter(d => {
+  function renderDivergencias(totalCount){
+    const filialFilter = els.filterFilial.value;
+    const clienteFilter = els.filterCliente.value;
+    const q = els.search.value.trim().toLowerCase();
+
+    const todas = divergenciasProcessadas();
+
+    // Filtrado apenas por Filial/Cliente do topo (sem card ativo, sem busca) —
+    // é isso que alimenta os números dos cards em tempo real.
+    const baseFiltradaPorTopo = todas.filter(d => {
       if (filialFilter !== 'TODOS' && d.filial !== filialFilter) return false;
 
-      // Filtro por card clicado no topo
-      if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false;
-      if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
-
-      const clientesPendentes = d.tipo === 'frota_nova' 
-        ? (d.clientesAtfs || []).map(normalizarCliente) 
-        : d.clientesFaltandoCorrigido;
-
+      const clientesPendentes = d.tipo === 'frota_nova' ? d.clientesAtfs : d.clientesFaltandoCorrigido;
       if (clienteFilter !== 'TODOS') {
         const clienteNorm = normalizarCliente(clienteFilter);
         if (!clientesPendentes.some(c => saoClientesEquivalentes(c, clienteNorm))) return false;
       }
+      return true;
+    });
+
+    const totalNovas = baseFiltradaPorTopo.filter(d => d.tipo === 'frota_nova' && !d.enviado).length;
+    const totalDivs = baseFiltradaPorTopo.filter(d => d.tipo !== 'frota_nova' && !d.enviado).length;
+    const totalAguardando = baseFiltradaPorTopo.filter(d => d.enviado).length;
+
+    els.stNovas.textContent = totalNovas;
+    els.stDivergencias.textContent = totalDivs;
+    els.stAguardando.textContent = totalAguardando;
+
+    updateBar('barNovas', totalNovas, totalCount);
+    updateBar('barDivergencias', totalDivs, totalCount);
+    updateBar('barAguardando', totalAguardando, totalCount);
+
+    if (todas.length === 0) {
+      divergenciasParaExportar = [];
+      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
+      return;
+    }
+
+    // Agora aplica o card ativo (novas/divergencias/aguardando) + busca
+    const divergenciasFiltradas = baseFiltradaPorTopo.filter(d => {
+      if (activeCardFilter === 'aguardando') {
+        if (!d.enviado) return false;
+      } else {
+        // Frotas já marcadas como enviadas saem das listas normais de divergência
+        if (d.enviado) return false;
+        if (activeCardFilter === 'divergencias' && d.tipo === 'frota_nova') return false;
+        if (activeCardFilter === 'novas' && d.tipo !== 'frota_nova') return false;
+      }
 
       if (q) {
+        const clientesPendentes = d.tipo === 'frota_nova' ? d.clientesAtfs : d.clientesFaltandoCorrigido;
         const matchFrota = d.frota.toLowerCase().includes(q);
         const matchCliente = clientesPendentes.some(c => c.toLowerCase().includes(q));
         if (!matchFrota && !matchCliente) return false;
@@ -1092,43 +1157,30 @@
       return true;
     });
 
-    const totalDivs = divergenciasReais.filter(d => d.tipo !== 'frota_nova').length;
-    const totalNovas = divergenciasReais.filter(d => d.tipo === 'frota_nova').length;
-
-    els.stNovas.textContent = totalNovas;
-    els.stDivergencias.textContent = totalDivs;
-
-    updateBar('barNovas', totalNovas, totalCount);
-    updateBar('barDivergencias', totalDivs, totalCount);
-
-    if (divergenciasReais.length === 0) {
-      divergenciasParaExportar = [];
-      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada. Tudo alinhado com a Relação de Frota.</div>';
-      return;
-    }
-
     if (divergenciasFiltradas.length === 0) {
       divergenciasParaExportar = [];
-      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhuma divergência encontrada para os filtros e buscas atuais.</div>';
+      els.divList.innerHTML = '<div class="state-msg" style="padding:20px 0;">Nenhum item encontrado para os filtros e buscas atuais.</div>';
       return;
     }
 
     divergenciasParaExportar = divergenciasFiltradas;
 
     els.divList.innerHTML = divergenciasFiltradas.map(d => {
-      if (d.tipo === 'frota_nova') {
-        const clientesAtfsNorm = Array.from(new Set((d.clientesAtfs || []).map(normalizarCliente)));
-        return `<div class="div-item novo">
-          <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge outro">Frota nova</span></div>
-          <div class="detalhe">Falta ATF: ${escapeHtml(clientesAtfsNorm.join(', ') || '—')}</div>
-          ${metaChipsHtml(d.dadosFrota)}
-        </div>`;
-      }
-      
-      const faltantesNorm = Array.from(new Set(d.clientesFaltandoCorrigido));
-      return `<div class="div-item dif">
-        <div class="row1"><span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span><span class="badge amber">Cliente diferente</span></div>
-        <div class="detalhe">Falta ATF: ${escapeHtml(faltantesNorm.join(', ') || '—')}</div>
+      const clientesPendentes = d.tipo === 'frota_nova'
+        ? Array.from(new Set(d.clientesAtfs || []))
+        : Array.from(new Set(d.clientesFaltandoCorrigido || []));
+
+      const classeExtra = d.enviado ? 'aguardando' : (d.tipo === 'frota_nova' ? 'novo' : 'dif');
+
+      return `<div class="div-item ${classeExtra}">
+        <div class="row1">
+          <span class="frota-tag">Frota ${escapeHtml(d.frota)} · ${escapeHtml(d.filial)}</span>
+          <label class="enviado-check" title="Marque quando o ATF desta frota já tiver sido enviado ao DER">
+            <input type="checkbox" data-enviado-toggle="${escapeHtml(d.filial)}|${escapeHtml(d.frota)}" ${d.enviado ? 'checked' : ''}>
+            <span>Enviado</span>
+          </label>
+        </div>
+        <div class="detalhe">Falta ATF: ${escapeHtml(clientesPendentes.join(', ') || '—')}</div>
         ${metaChipsHtml(d.dadosFrota)}
       </div>`;
     }).join('');
