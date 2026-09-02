@@ -1859,15 +1859,36 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
 
         // (o cabeçalho é desenhado dentro do didDrawPage abaixo — cobre a página 1 e as seguintes)
 
-        const body = rowsToExport.map(r => ([
-          r.motorista || '—',
-          r.filial || '—',
-          r.funcao || '—',
-          r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
-          pdfDaysInfo(r.derDias, r.derStatus).label,
-          r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
-          pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
-        ]));
+        // Quando o motorista não tem NENHUMA validade cadastrada (nem DER, nem
+        // CNH), em vez de deixar as colunas de validade em branco, mostramos
+        // os documentos pendentes dele — os mesmos que aparecem no modal de
+        // detalhes (CTPS, CNH, Curso, Criminal etc.). Se ele também não tiver
+        // nenhum documento pendente registrado, aí sim fica só o traço.
+        function docsPendentesLabel(r){
+          return (r.docsPendentes && r.docsPendentes.length)
+            ? r.docsPendentes.join(', ')
+            : '—';
+        }
+
+        const body = rowsToExport.map(r => {
+          const semValidadeAlguma = !r.derVal && !r.cnhVal;
+          const derValCell = r.derVal
+            ? (r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal))
+            : (semValidadeAlguma ? docsPendentesLabel(r) : '—');
+          const cnhValCell = r.cnhVal
+            ? (r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal))
+            : (semValidadeAlguma ? docsPendentesLabel(r) : '—');
+
+          return [
+            r.motorista || '—',
+            r.filial || '—',
+            r.funcao || '—',
+            derValCell,
+            pdfDaysInfo(r.derDias, r.derStatus).label,
+            cnhValCell,
+            pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
+          ];
+        });
 
         const DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
         const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
