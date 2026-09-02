@@ -407,6 +407,9 @@
     font-size:11px;font-weight:700;letter-spacing:.2px;
     background:var(--amber-soft);color:#c07f16;border:1px solid rgba(192,127,22,.35);
   }
+  .th-docs{min-width:220px;}
+  .doc-cell{display:flex;flex-wrap:wrap;gap:6px;}
+  .mcard-docs{flex-wrap:wrap;gap:6px;}
   @media (max-width:600px){ .modal-grid{grid-template-columns:1fr 1fr;} }
   .count-pill{font-family:var(--font-mono);font-size:12px;color:var(--slate-600);}
 
@@ -569,15 +572,12 @@
             <th data-key="motorista">Motorista <span class="arrow"></span></th>
             <th data-key="filial">Filial <span class="arrow"></span></th>
             <th data-key="funcao">Função <span class="arrow"></span></th>
-            <th data-key="derVal">DER validade <span class="arrow"></span></th>
-            <th data-key="derDias">Dias rest. DER <span class="arrow"></span></th>
-            <th data-key="cnhVal">CNH validade <span class="arrow"></span></th>
-            <th data-key="cnhDias">Dias rest. CNH <span class="arrow"></span></th>
+            <th class="th-docs">DOCUMENTAÇÃO</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
-          <tr><td colspan="7" id="tfootMsg"></td></tr>
+          <tr><td colspan="4" id="tfootMsg"></td></tr>
         </tfoot>
       </table>
     </div>
@@ -929,6 +929,7 @@ function tempoRelativo(data) {
   document.querySelectorAll('thead th').forEach(th=>{
     th.addEventListener('click', ()=>{
       const key = th.dataset.key;
+      if(!key) return;
       sortState.dir = (sortState.key === key) ? -sortState.dir : 1;
       sortState.key = key;
       currentPage = 1;
@@ -2128,17 +2129,12 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
     document.getElementById('pagination').style.display = rows.length > PAGE_SIZE ? 'flex' : 'none';
 
     els.tbody.innerHTML = pageRows.map((r,i)=>{
-      const der = daysBar(r.derDias, r.derStatus);
-      const cnh = daysBar(r.cnhDias, r.cnhStatus);
       const multaTag = r.multasPendentes>0 ? `<span class="badge-multa" title="${r.multasPendentes} multa(s) pendente(s)">Multa</span>` : '';
       return `<tr data-i="${i}">
         <td class="name">${escapeHtml(r.motorista)}${multaTag}</td>
         <td>${escapeHtml(r.filial)}</td>
         <td>${escapeHtml(r.funcao)}</td>
-        <td>${fmtDateEstHtml(r.derVal, r.derValEstimado)}</td>
-        <td><div class="days"><div class="track"><i style="width:${der.pct}%;background:${der.color}"></i></div><span class="n">${der.label}</span></div></td>
-        <td>${fmtDateEstHtml(r.cnhVal, r.cnhValEstimado)}</td>
-        <td><div class="days"><div class="track"><i style="width:${cnh.pct}%;background:${cnh.color}"></i></div><span class="n">${cnh.label}</span></div></td>
+        <td>${docsCellHtml(r)}</td>
       </tr>`;
     }).join('');
 
@@ -2147,8 +2143,6 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
     });
 
     els.mobileCards.innerHTML = pageRows.map((r,i)=>{
-      const der = daysBar(r.derDias, r.derStatus);
-      const cnh = daysBar(r.cnhDias, r.cnhStatus);
       const multaTagM = r.multasPendentes>0 ? `<span class="badge-multa" title="${r.multasPendentes} multa(s) pendente(s)">Multa</span>` : '';
       return `<div class="mcard" data-i="${i}">
         <div class="mcard-top">
@@ -2156,8 +2150,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
           <span class="mcard-filial">${escapeHtml(r.filial)}</span>
         </div>
         <div class="mcard-func">${escapeHtml(r.funcao || '—')}</div>
-        <div class="mcard-row"><span>DER · ${fmtDateEstHtml(r.derVal, r.derValEstimado)}</span><span class="mcard-pill" style="background:${der.color}22;color:${der.color}">${der.label}</span></div>
-        <div class="mcard-row"><span>CNH · ${fmtDateEstHtml(r.cnhVal, r.cnhValEstimado)}</span><span class="mcard-pill" style="background:${cnh.color}22;color:${cnh.color}">${cnh.label}</span></div>
+        <div class="mcard-row mcard-docs">${docsCellHtml(r)}</div>
       </div>`;
     }).join('');
 
@@ -2316,6 +2309,12 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
     const p = (problemas||'').toString().trim();
     if(!p || p.toUpperCase()==='NÃO' || p.toUpperCase()==='NAO') return '<span class="badge outro">Sem pendência</span>';
     return `<span class="badge vencido">${escapeHtml(p)}</span>`;
+  }
+
+  function docsCellHtml(r){
+    const pendentes = r.docsPendentes || [];
+    if(!pendentes.length) return '<span class="badge ativo">Completo</span>';
+    return `<div class="doc-cell">${pendentes.map(tag => `<span class="badge-doc">${escapeHtml(tag)}</span>`).join('')}</div>`;
   }
 
   function escapeHtml(s){
