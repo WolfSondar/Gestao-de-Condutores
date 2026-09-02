@@ -1846,63 +1846,27 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         const pageW = doc.internal.pageSize.getWidth();
         const pageH = doc.internal.pageSize.getHeight();
 
-        // Mesma lógica de cor/rótulo da barrinha "Dias rest." que aparece na tela
-        // (função daysBar), só que com as cores já em RGB pro jsPDF.
-        function pdfDaysInfo(days, status){
-          if(status === 'AGUARDANDO') return {pct:100, color:[30,66,120], label:'Aguard. DER'};
-          if(status === 'SEM_CADASTRO' || days===null || days===undefined || isNaN(days)) return {pct:0, color:[147,160,179], label:'—'};
-          let color = [43,173,125];
-          if(days < 0) color = [229,72,77];
-          else if(days <= 30) color = [242,169,59];
-          const pct = days < 0 ? 100 : Math.max(4, Math.min(100, (Math.min(days,180)/180)*100));
-          return {pct, color, label: days < 0 ? 'Vencido' : `${days}d`};
-        }
-
-        // (o cabeçalho é desenhado dentro do didDrawPage abaixo — cobre a página 1 e as seguintes)
-
-        const DER_VAL_COL = 3, DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
-        const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
-
-        // Motorista sem validade nenhuma cadastrada (nem DER, nem CNH): em vez das
-        // 4 colunas em branco, mescla tudo numa célula única "DOCUMENTAÇÃO" com os
-        // documentos pendentes — a mesma lista (r.docsPendentes) que aparece no modal.
-        const semNadaByRow = rowsToExport.map(r => r.derStatus === 'SEM_CADASTRO' && r.cnhStatus === 'SEM_CADASTRO');
+        // Mesma lista de documentos pendentes (r.docsPendentes) que já aparece
+        // no modal de detalhes e na coluna "DOCUMENTAÇÃO" da tela.
         const docsInfoByRow = rowsToExport.map(r => {
           const pendentes = r.docsPendentes || [];
-          return { hasDocs: pendentes.length > 0, texto: pendentes.length ? pendentes.join(', ') : '—' };
+          return { hasDocs: pendentes.length > 0, texto: pendentes.length ? pendentes.join(', ') : 'Completo' };
         });
 
-        const body = rowsToExport.map((r, i) => {
-          if(semNadaByRow[i]){
-            return [
-              r.motorista || '—',
-              r.filial || '—',
-              r.funcao || '—',
-              { content: '', colSpan: 4, styles: { fillColor:[253,241,221] } },
-            ];
-          }
-          return [
-            r.motorista || '—',
-            r.filial || '—',
-            r.funcao || '—',
-            r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
-            pdfDaysInfo(r.derDias, r.derStatus).label,
-            r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
-            pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
-          ];
-        });
+        const body = rowsToExport.map((r, i) => [
+          r.motorista || '—',
+          r.filial || '—',
+          r.funcao || '—',
+          docsInfoByRow[i].texto,
+        ]);
 
         doc.autoTable({
           startY: 32,
-          head: [['Motorista','Filial','Função','DER validade','Dias rest. DER','CNH validade','Dias rest. CNH']],
+          head: [['Motorista','Filial','Função','Documentação']],
           body,
           styles: { font:'helvetica', fontSize:8.5, cellPadding:{top:2.6,bottom:2.6,left:3,right:3}, textColor:[27,36,51], lineColor:[228,232,240], lineWidth:.15, valign:'middle' },
           headStyles: { fillColor:[15,37,68], textColor:255, fontStyle:'bold', fontSize:8.5 },
           alternateRowStyles: { fillColor:[250,251,253] },
-          columnStyles: {
-            [DER_DIAS_COL]: { halign:'right', cellPadding:{top:2.6,bottom:2.6,left:BAR_MAX_W+5,right:3} },
-            [CNH_DIAS_COL]: { halign:'right', cellPadding:{top:2.6,bottom:2.6,left:BAR_MAX_W+5,right:3} },
-          },
           margin: { left:14, right:14, top:32, bottom:16 },
           didDrawPage: function(){
             // Redesenha o cabeçalho em toda página nova que o autoTable criar,
@@ -1911,59 +1875,10 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
           },
           didParseCell: function(data){
             if(data.section !== 'body') return;
-            if(semNadaByRow[data.row.index]) return; // linha mesclada — estilo já veio no styles da célula
-            if(data.column.index === DER_DIAS_COL || data.column.index === CNH_DIAS_COL){
-              const v = (data.cell.raw||'').toString();
-              if(v === 'Vencido') data.cell.styles.textColor = [229,72,77];
-              else if(v === 'Aguard. DER') data.cell.styles.textColor = [30,66,120];
-              else if(v === '—') data.cell.styles.textColor = [147,160,179];
-              else data.cell.styles.textColor = [27,36,51];
-            }
-          },
-          willDrawCell: function(data){
-            // Desenha a trilha + preenchimento colorido (a "barrinha de dias
-            // restantes"), igual à que aparece na tela, à esquerda do número.
-            if(data.section !== 'body') return;
-            if(semNadaByRow[data.row.index]) return; // linha mesclada — sem barrinha aqui
-            if(data.column.index !== DER_DIAS_COL && data.column.index !== CNH_DIAS_COL) return;
-            const r = rowsToExport[data.row.index];
-            const info = data.column.index === DER_DIAS_COL
-              ? pdfDaysInfo(r.derDias, r.derStatus)
-              : pdfDaysInfo(r.cnhDias, r.cnhStatus);
-            const trackH = 2.1;
-            const trackX = data.cell.x + 3;
-            const trackY = data.cell.y + data.cell.height/2 - trackH/2;
-            doc.setFillColor(233,236,242);
-            doc.roundedRect(trackX, trackY, BAR_MAX_W, trackH, 1, 1, 'F');
-            const fillW = Math.max(1.4, BAR_MAX_W * (info.pct/100));
-            doc.setFillColor(info.color[0], info.color[1], info.color[2]);
-            doc.roundedRect(trackX, trackY, fillW, trackH, 1, 1, 'F');
-          },
-          didDrawCell: function(data){
-            // Nas linhas "sem nada" (nem DER, nem CNH), a célula mesclada (colSpan 4)
-            // aparece na posição da coluna "DER validade" — desenha ali o rótulo
-            // DOCUMENTAÇÃO e, logo abaixo, os documentos pendentes desse motorista
-            // (mesma lista r.docsPendentes que já aparece no modal de detalhes).
-            if(data.section !== 'body') return;
-            if(data.column.index !== DER_VAL_COL) return;
-            if(!semNadaByRow[data.row.index]) return;
+            if(data.column.index !== 3) return; // coluna Documentação
             const info = docsInfoByRow[data.row.index];
-            const cx = data.cell.x + data.cell.width / 2;
-            const cy = data.cell.y + data.cell.height / 2;
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            doc.setTextColor(15, 37, 68);
-            doc.text('DOCUMENTAÇÃO', cx, cy - (info.hasDocs ? 2.3 : 1), { align: 'center' });
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            if(info.hasDocs){
-              doc.setTextColor(192, 127, 22);
-              const wrapped = doc.splitTextToSize(info.texto, data.cell.width - 6);
-              doc.text(wrapped, cx, cy + 2.6, { align: 'center' });
-            } else {
-              doc.setTextColor(147, 160, 179);
-              doc.text('—', cx, cy + 2.6, { align: 'center' });
-            }
+            data.cell.styles.textColor = info.hasDocs ? [192, 127, 22] : [43, 173, 125];
+            data.cell.styles.fontStyle = 'bold';
           },
         });
 
