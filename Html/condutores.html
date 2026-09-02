@@ -1859,39 +1859,37 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
 
         // (o cabeçalho é desenhado dentro do didDrawPage abaixo — cobre a página 1 e as seguintes)
 
-        // Quando o motorista não tem NENHUMA validade cadastrada (nem DER, nem
-        // CNH), em vez de deixar as colunas de validade em branco, mostramos
-        // os documentos pendentes dele — os mesmos que aparecem no modal de
-        // detalhes (CTPS, CNH, Curso, Criminal etc.). Se ele também não tiver
-        // nenhum documento pendente registrado, aí sim fica só o traço.
-        function docsPendentesLabel(r){
-          return (r.docsPendentes && r.docsPendentes.length)
-            ? r.docsPendentes.join(', ')
-            : '—';
-        }
+        const DER_VAL_COL = 3, DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
+        const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
 
-        const body = rowsToExport.map(r => {
-          const semValidadeAlguma = !r.derVal && !r.cnhVal;
-          const derValCell = r.derVal
-            ? (r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal))
-            : (semValidadeAlguma ? docsPendentesLabel(r) : '—');
-          const cnhValCell = r.cnhVal
-            ? (r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal))
-            : (semValidadeAlguma ? docsPendentesLabel(r) : '—');
+        // Motorista sem validade nenhuma cadastrada (nem DER, nem CNH): em vez das
+        // 4 colunas em branco, mescla tudo numa célula única "DOCUMENTAÇÃO" com os
+        // documentos pendentes — a mesma lista (r.docsPendentes) que aparece no modal.
+        const semNadaByRow = rowsToExport.map(r => r.derStatus === 'SEM_CADASTRO' && r.cnhStatus === 'SEM_CADASTRO');
+        const docsInfoByRow = rowsToExport.map(r => {
+          const pendentes = r.docsPendentes || [];
+          return { hasDocs: pendentes.length > 0, texto: pendentes.length ? pendentes.join(', ') : '—' };
+        });
 
+        const body = rowsToExport.map((r, i) => {
+          if(semNadaByRow[i]){
+            return [
+              r.motorista || '—',
+              r.filial || '—',
+              r.funcao || '—',
+              { content: '', colSpan: 4, styles: { fillColor:[253,241,221] } },
+            ];
+          }
           return [
             r.motorista || '—',
             r.filial || '—',
             r.funcao || '—',
-            derValCell,
+            r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
             pdfDaysInfo(r.derDias, r.derStatus).label,
-            cnhValCell,
+            r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
             pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
           ];
         });
-
-        const DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
-        const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
 
         doc.autoTable({
           startY: 32,
@@ -1911,7 +1909,9 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
             pdfHeader(doc, pageW, 'Relatório de Condutores', subtitulo);
           },
           didParseCell: function(data){
-            if(data.section === 'body' && (data.column.index === DER_DIAS_COL || data.column.index === CNH_DIAS_COL)){
+            if(data.section !== 'body') return;
+            if(semNadaByRow[data.row.index]) return; // linha mesclada — estilo já veio no styles da célula
+            if(data.column.index === DER_DIAS_COL || data.column.index === CNH_DIAS_COL){
               const v = (data.cell.raw||'').toString();
               if(v === 'Vencido') data.cell.styles.textColor = [229,72,77];
               else if(v === 'Aguard. DER') data.cell.styles.textColor = [30,66,120];
@@ -1923,6 +1923,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
             // Desenha a trilha + preenchimento colorido (a "barrinha de dias
             // restantes"), igual à que aparece na tela, à esquerda do número.
             if(data.section !== 'body') return;
+            if(semNadaByRow[data.row.index]) return; // linha mesclada — sem barrinha aqui
             if(data.column.index !== DER_DIAS_COL && data.column.index !== CNH_DIAS_COL) return;
             const r = rowsToExport[data.row.index];
             const info = data.column.index === DER_DIAS_COL
@@ -1936,6 +1937,32 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
             const fillW = Math.max(1.4, BAR_MAX_W * (info.pct/100));
             doc.setFillColor(info.color[0], info.color[1], info.color[2]);
             doc.roundedRect(trackX, trackY, fillW, trackH, 1, 1, 'F');
+          },
+          didDrawCell: function(data){
+            // Nas linhas "sem nada" (nem DER, nem CNH), a célula mesclada (colSpan 4)
+            // aparece na posição da coluna "DER validade" — desenha ali o rótulo
+            // DOCUMENTAÇÃO e, logo abaixo, os documentos pendentes desse motorista
+            // (mesma lista r.docsPendentes que já aparece no modal de detalhes).
+            if(data.section !== 'body') return;
+            if(data.column.index !== DER_VAL_COL) return;
+            if(!semNadaByRow[data.row.index]) return;
+            const info = docsInfoByRow[data.row.index];
+            const cx = data.cell.x + data.cell.width / 2;
+            const cy = data.cell.y + data.cell.height / 2;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(15, 37, 68);
+            doc.text('DOCUMENTAÇÃO', cx, cy - (info.hasDocs ? 2.3 : 1), { align: 'center' });
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            if(info.hasDocs){
+              doc.setTextColor(192, 127, 22);
+              const wrapped = doc.splitTextToSize(info.texto, data.cell.width - 6);
+              doc.text(wrapped, cx, cy + 2.6, { align: 'center' });
+            } else {
+              doc.setTextColor(147, 160, 179);
+              doc.text('—', cx, cy + 2.6, { align: 'center' });
+            }
           },
         });
 
