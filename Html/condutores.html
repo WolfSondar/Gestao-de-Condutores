@@ -1859,15 +1859,42 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
 
         // (o cabeçalho é desenhado dentro do didDrawPage abaixo — cobre a página 1 e as seguintes)
 
-        const body = rowsToExport.map(r => ([
-          r.motorista || '—',
-          r.filial || '—',
-          r.funcao || '—',
-          r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
-          pdfDaysInfo(r.derDias, r.derStatus).label,
-          r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
-          pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
-        ]));
+        // Mapeia cada linha do corpo (pela referência do array) até o condutor de origem.
+        // Usar a referência da linha em vez de "rowsToExport[data.row.index]" evita o crash
+        // "Cannot read properties of undefined (reading 'derDias')": o autoTable pode invocar
+        // os hooks de célula com um índice de linha que não bate 1:1 com rowsToExport (ex.
+        // quando uma linha quebra entre páginas), então indexar por posição é frágil.
+        const pdfRowMeta = new Map();
+
+        const body = rowsToExport.map(r => {
+          // Motorista sem cadastro no DER (sem validade lançada) E com documentos pendentes:
+          // troca as 4 colunas de DER/CNH por "Documentos pendentes" + "Observações".
+          const semDerComPendencia = r.derStatus === 'SEM_CADASTRO' && r.docsPendentes && r.docsPendentes.length;
+          let row;
+          if(semDerComPendencia){
+            const docsTxt = r.docsPendentes.join(', ');
+            const obsTxt = (r.docsObservacao || '').trim() || '—';
+            row = [
+              r.motorista || '—',
+              r.filial || '—',
+              r.funcao || '—',
+              { content: docsTxt, colSpan: 2 },
+              { content: obsTxt, colSpan: 2 },
+            ];
+          } else {
+            row = [
+              r.motorista || '—',
+              r.filial || '—',
+              r.funcao || '—',
+              r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
+              pdfDaysInfo(r.derDias, r.derStatus).label,
+              r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
+              pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
+            ];
+          }
+          pdfRowMeta.set(row, r);
+          return row;
+        });
 
         const DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
         const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
@@ -1903,7 +1930,8 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
             // restantes"), igual à que aparece na tela, à esquerda do número.
             if(data.section !== 'body') return;
             if(data.column.index !== DER_DIAS_COL && data.column.index !== CNH_DIAS_COL) return;
-            const r = rowsToExport[data.row.index];
+            const r = pdfRowMeta.get(data.row.raw);
+            if(!r) return; // linha mesclada (Documentos pendentes) ou não localizada: sem barrinha
             const info = data.column.index === DER_DIAS_COL
               ? pdfDaysInfo(r.derDias, r.derStatus)
               : pdfDaysInfo(r.cnhDias, r.cnhStatus);
