@@ -696,6 +696,10 @@
       </label>
 
       <div id="exportManualPicker" class="hidden" style="margin-top:6px;">
+        <div class="export-picker-filter-bar" id="exportPickerFilterBar" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;padding:8px 10px;background:var(--surface-2,#f3f5f9);border-radius:8px;font-size:12.5px;color:var(--text-2,#5c6b82);">
+          <span id="exportPickerFilterInfo"></span>
+          <button type="button" class="btn-chip" id="exportPickerClearFilters" style="flex:none;">Limpar filtros</button>
+        </div>
         <div class="search-wrap" style="margin-bottom:10px;">
           <input type="text" id="exportPickerSearch" placeholder="Buscar por nome, filial ou matrícula…">
         </div>
@@ -788,6 +792,9 @@
     exportPickClear: document.getElementById('exportPickClear'),
     exportPickCount: document.getElementById('exportPickCount'),
     exportPickerList: document.getElementById('exportPickerList'),
+    exportPickerFilterBar: document.getElementById('exportPickerFilterBar'),
+    exportPickerFilterInfo: document.getElementById('exportPickerFilterInfo'),
+    exportPickerClearFilters: document.getElementById('exportPickerClearFilters'),
   };
 
   // Caminho do relCondutores.xlsx a partir de Html/condutores.html.
@@ -821,6 +828,7 @@ function tempoRelativo(data) {
   let lastFilteredRows = [];   // última lista (todos os registros que batem com os filtros atuais, sem paginação) — usada pela exportação
   let exportPickedCpf = new Set(); // seleção manual do popup de exportação (chave: CPF, ou nome quando não há CPF)
   let exportPickerSearchQ = '';
+  let exportPickerUseFilters = true; // true = picker começa mostrando só quem bate com os filtros atuais da tela
 
   function isEnviadoAguardando(r){
     return r.derStatus === 'AGUARDANDO';
@@ -852,6 +860,11 @@ function tempoRelativo(data) {
   els.exportModeFiltro.addEventListener('change', updateExportModeUI);
   els.exportModeManual.addEventListener('change', updateExportModeUI);
   els.exportPickerSearch.addEventListener('input', () => { exportPickerSearchQ = els.exportPickerSearch.value.trim().toLowerCase(); renderExportPickerList(); });
+  els.exportPickerClearFilters.addEventListener('click', () => {
+    exportPickerUseFilters = false;
+    renderExportPickerList();
+    els.exportPickerSearch.focus();
+  });
   els.exportPickAllVisible.addEventListener('click', () => {
     getExportPickerVisibleRows().forEach(r => exportPickedCpf.add(exportRowKey(r)));
     renderExportPickerList();
@@ -1621,6 +1634,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
     els.exportModeFiltro.checked = true;
     exportPickedCpf.clear();
     exportPickerSearchQ = '';
+    exportPickerUseFilters = true;
     els.exportPickerSearch.value = '';
     els.exportFiltroResumo.textContent = `${lastFilteredRows.length} condutor${lastFilteredRows.length===1?'':'es'} com os filtros de agora — ${currentFilterSummaryText()}`;
     updateExportModeUI();
@@ -1638,7 +1652,11 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
   }
   function getExportPickerVisibleRows(){
     const q = exportPickerSearchQ;
-    let list = rawRows.slice().sort((a,b)=> (a.motorista||'').localeCompare(b.motorista||'', 'pt-BR'));
+    // Enquanto exportPickerUseFilters estiver ativo, a base é a lista já filtrada pelos
+    // filtros atuais da tela (filial, status DER/CNH, multas, busca); "Limpar filtros"
+    // troca a base para todos os condutores (rawRows), permitindo buscar qualquer um.
+    const base = exportPickerUseFilters ? lastFilteredRows : rawRows;
+    let list = base.slice().sort((a,b)=> (a.motorista||'').localeCompare(b.motorista||'', 'pt-BR'));
     if(q){
       list = list.filter(r =>
         (r.motorista||'').toLowerCase().includes(q) ||
@@ -1651,6 +1669,12 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
   function renderExportPickerList(){
     const list = getExportPickerVisibleRows();
     els.exportPickCount.textContent = `${exportPickedCpf.size} selecionado${exportPickedCpf.size===1?'':'s'}`;
+    if(els.exportPickerFilterBar){
+      els.exportPickerFilterBar.style.display = exportPickerUseFilters ? 'flex' : 'none';
+      if(exportPickerUseFilters){
+        els.exportPickerFilterInfo.textContent = `Mostrando ${lastFilteredRows.length} condutor${lastFilteredRows.length===1?'':'es'} com os filtros atuais — ${currentFilterSummaryText()}`;
+      }
+    }
     if(!list.length){
       els.exportPickerList.innerHTML = '<div class="export-empty-hint">Nenhum condutor encontrado.</div>';
       return;
@@ -1866,31 +1890,79 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         // quando uma linha quebra entre páginas), então indexar por posição é frágil.
         const pdfRowMeta = new Map();
 
+        // "Tem pendência documental" = checklist de documentos pendentes (planilha de
+        // documentação) OU DER/CNH vencido/sem cadastro — ou seja, não está "tudo certo".
+        function temPendenciaDocumental(r){
+          return (r.docsPendentes && r.docsPendentes.length > 0)
+            || r.derStatus === 'VENCIDO' || r.derStatus === 'SEM_CADASTRO'
+            || r.cnhStatus === 'VENCIDO' || r.cnhStatus === 'SEM_CADASTRO';
+        }
+        // Lista de "tags" de pendência de um condutor: documentos do checklist + DER/CNH
+        // vencido ou sem cadastro (rotulados igual ao badge que aparece na tela).
+        function pendenciaTags(r){
+          const tags = (r.docsPendentes || []).slice();
+          if(r.derStatus === 'SEM_CADASTRO') tags.push('DER sem cadastro');
+          else if(r.derStatus === 'VENCIDO') tags.push('DER vencido');
+          if(r.cnhStatus === 'SEM_CADASTRO') tags.push('CNH sem cadastro');
+          else if(r.cnhStatus === 'VENCIDO') tags.push('CNH vencida');
+          return tags;
+        }
+        // Relatório "de pendências": só entra nesse modo (2 colunas em vez de 4) quando
+        // TODOS os condutores exportados têm alguma pendência documental — trocado
+        // automaticamente, sem precisar de nenhuma opção extra no popup de exportação.
+        const modoPendencias = rowsToExport.length > 0 && rowsToExport.every(temPendenciaDocumental);
+
         const body = rowsToExport.map(r => {
-          // Motorista sem cadastro no DER (sem validade lançada) E com documentos pendentes:
-          // troca as 4 colunas de DER/CNH por "Documentos pendentes" + "Observações".
-          const semDerComPendencia = r.derStatus === 'SEM_CADASTRO' && r.docsPendentes && r.docsPendentes.length;
           let row;
-          if(semDerComPendencia){
-            const docsTxt = r.docsPendentes.join(', ');
-            const obsTxt = (r.docsObservacao || '').trim() || '—';
-            row = [
-              r.motorista || '—',
-              r.filial || '—',
-              r.funcao || '—',
-              { content: docsTxt, colSpan: 2 },
-              { content: obsTxt, colSpan: 2 },
-            ];
+          if(modoPendencias){
+            const tags = pendenciaTags(r);
+            if(!tags.length){
+              // Salvaguarda: se por algum motivo esse condutor não tiver nenhuma pendência
+              // (mesmo o relatório sendo "de pendências"), avisa que está tudo certo em vez
+              // de deixar a linha em branco.
+              row = [
+                r.motorista || '—',
+                r.filial || '—',
+                r.funcao || '—',
+                { content: 'TUDO CERTO', colSpan: 2, styles: { halign:'center', fontStyle:'bold', textColor:[43,173,125] } },
+              ];
+            } else {
+              const docsTxt = tags.join(', ');
+              const obsTxt = (r.docsObservacao || '').trim() || '—';
+              row = [
+                r.motorista || '—',
+                r.filial || '—',
+                r.funcao || '—',
+                docsTxt,
+                obsTxt,
+              ];
+            }
           } else {
-            row = [
-              r.motorista || '—',
-              r.filial || '—',
-              r.funcao || '—',
-              r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
-              pdfDaysInfo(r.derDias, r.derStatus).label,
-              r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
-              pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
-            ];
+            // Motorista sem cadastro no DER (sem validade lançada) E com documentos pendentes:
+            // troca as 4 colunas de DER/CNH por "Documentos pendentes" + "Observações" só
+            // nessa linha (o relatório como um todo continua no formato de 7 colunas).
+            const semDerComPendencia = r.derStatus === 'SEM_CADASTRO' && r.docsPendentes && r.docsPendentes.length;
+            if(semDerComPendencia){
+              const docsTxt = r.docsPendentes.join(', ');
+              const obsTxt = (r.docsObservacao || '').trim() || '—';
+              row = [
+                r.motorista || '—',
+                r.filial || '—',
+                r.funcao || '—',
+                { content: docsTxt, colSpan: 2 },
+                { content: obsTxt, colSpan: 2 },
+              ];
+            } else {
+              row = [
+                r.motorista || '—',
+                r.filial || '—',
+                r.funcao || '—',
+                r.derValEstimado ? fmtDate(r.derVal) + ' ≈' : fmtDate(r.derVal),
+                pdfDaysInfo(r.derDias, r.derStatus).label,
+                r.cnhValEstimado ? fmtDate(r.cnhVal) + ' ≈' : fmtDate(r.cnhVal),
+                pdfDaysInfo(r.cnhDias, r.cnhStatus).label,
+              ];
+            }
           }
           pdfRowMeta.set(row, r);
           return row;
@@ -1899,14 +1971,18 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         const DER_DIAS_COL = 4, CNH_DIAS_COL = 6;
         const BAR_MAX_W = 15; // mm — largura máxima da trilha da barrinha, igual pros dois
 
+        const head = modoPendencias
+          ? [['Motorista','Filial','Função','Documentação pendente','Informação']]
+          : [['Motorista','Filial','Função','DER validade','Dias rest. DER','CNH validade','Dias rest. CNH']];
+
         doc.autoTable({
           startY: 32,
-          head: [['Motorista','Filial','Função','DER validade','Dias rest. DER','CNH validade','Dias rest. CNH']],
+          head,
           body,
           styles: { font:'helvetica', fontSize:8.5, cellPadding:{top:2.6,bottom:2.6,left:3,right:3}, textColor:[27,36,51], lineColor:[228,232,240], lineWidth:.15, valign:'middle' },
           headStyles: { fillColor:[15,37,68], textColor:255, fontStyle:'bold', fontSize:8.5 },
           alternateRowStyles: { fillColor:[250,251,253] },
-          columnStyles: {
+          columnStyles: modoPendencias ? {} : {
             [DER_DIAS_COL]: { halign:'right', cellPadding:{top:2.6,bottom:2.6,left:BAR_MAX_W+5,right:3} },
             [CNH_DIAS_COL]: { halign:'right', cellPadding:{top:2.6,bottom:2.6,left:BAR_MAX_W+5,right:3} },
           },
@@ -1914,9 +1990,10 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
           didDrawPage: function(){
             // Redesenha o cabeçalho em toda página nova que o autoTable criar,
             // pra manter o relatório consistente mesmo com listas grandes.
-            pdfHeader(doc, pageW, 'Relatório de Condutores', subtitulo);
+            pdfHeader(doc, pageW, modoPendencias ? 'Relatório de Condutores — Pendências' : 'Relatório de Condutores', modoPendencias ? `${subtitulo} · só documentação pendente` : subtitulo);
           },
           didParseCell: function(data){
+            if(modoPendencias) return;
             if(data.section === 'body' && (data.column.index === DER_DIAS_COL || data.column.index === CNH_DIAS_COL)){
               const v = (data.cell.raw||'').toString();
               if(v === 'Vencido') data.cell.styles.textColor = [229,72,77];
@@ -1928,6 +2005,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
           willDrawCell: function(data){
             // Desenha a trilha + preenchimento colorido (a "barrinha de dias
             // restantes"), igual à que aparece na tela, à esquerda do número.
+            if(modoPendencias) return;
             if(data.section !== 'body') return;
             if(data.column.index !== DER_DIAS_COL && data.column.index !== CNH_DIAS_COL) return;
             const r = pdfRowMeta.get(data.row.raw);
