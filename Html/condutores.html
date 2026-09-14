@@ -360,7 +360,8 @@
     padding:12px 14px;cursor:pointer;transition:border-color .12s, background .12s;margin-bottom:10px;
   }
   .export-mode-opt:hover{border-color:var(--navy-700);}
-  .export-mode-opt input[type="radio"]{margin-top:3px;accent-color:var(--navy-900);flex:none;}
+  .export-mode-opt input[type="radio"],
+  .export-mode-opt input[type="checkbox"]{margin-top:3px;accent-color:var(--navy-900);flex:none;}
   .export-mode-opt strong{display:block;font-size:13.5px;color:var(--slate-900);}
   .export-mode-opt.active{border-color:var(--navy-900);background:var(--amber-soft);}
   .export-mode-sub{display:block;font-size:12px;color:var(--slate-600);margin-top:2px;}
@@ -710,6 +711,14 @@
         </div>
         <div class="export-picker-list" id="exportPickerList"></div>
       </div>
+
+      <label class="export-mode-opt" id="exportOptConfidencial" style="margin-top:6px;">
+        <input type="checkbox" id="exportModoConfidencial">
+        <div>
+          <strong>Modo confidencial</strong>
+          <span class="export-mode-sub">Oculta no PDF os documentos internos do setor (Certidão Criminal e Certidão de Bons Antecedentes)</span>
+        </div>
+      </label>
     </div>
     <div class="modal-foot">
       <button type="button" class="btn btn-ghost" id="exportModalCancel">Cancelar</button>
@@ -783,6 +792,7 @@
     exportModalGenerate: document.getElementById('exportModalGenerate'),
     exportOptFiltro: document.getElementById('exportOptFiltro'),
     exportOptManual: document.getElementById('exportOptManual'),
+    exportModoConfidencial: document.getElementById('exportModoConfidencial'),
     exportModeFiltro: document.getElementById('exportModeFiltro'),
     exportModeManual: document.getElementById('exportModeManual'),
     exportFiltroResumo: document.getElementById('exportFiltroResumo'),
@@ -1842,6 +1852,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
   // Popup "Exportar lista" (ao lado do filtro CNH): PDF com a tabela de condutores.
   function generateListPdf(){
     const manual = els.exportModeManual.checked;
+    const modoConfidencial = els.exportModoConfidencial.checked;
     let rowsToExport;
     let subtitulo;
     if(manual){
@@ -1860,6 +1871,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
       alert('Não há condutores para exportar com esses critérios.');
       return;
     }
+    if(modoConfidencial) subtitulo += ' · modo confidencial';
 
     setBtnLoading(els.exportModalGenerate, true, '⏳ Gerando…');
     setTimeout(() => {
@@ -1890,12 +1902,13 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         // quando uma linha quebra entre páginas), então indexar por posição é frágil.
         const pdfRowMeta = new Map();
 
-        // Documentos que são controle interno do setor e NÃO devem aparecer no relatório
-        // exportado (que é enviado para outras pessoas/áreas). Continuam aparecendo
-        // normalmente na tela (modal do condutor).
+        // Documentos que são controle interno do setor. Por padrão continuam aparecendo
+        // no relatório normalmente (igual à tela); só somem quando "Modo confidencial"
+        // estiver marcado no popup de exportação.
         const TAGS_OCULTAS_NO_RELATORIO = ['Criminal', 'Antecedentes'];
         function docsPendentesRelatorio(r){
-          return (r.docsPendentes || []).filter(tag => !TAGS_OCULTAS_NO_RELATORIO.includes(tag));
+          const pendentes = r.docsPendentes || [];
+          return modoConfidencial ? pendentes.filter(tag => !TAGS_OCULTAS_NO_RELATORIO.includes(tag)) : pendentes;
         }
 
         // "Tem pendência documental" = checklist de documentos pendentes (planilha de
