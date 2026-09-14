@@ -1890,17 +1890,25 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         // quando uma linha quebra entre páginas), então indexar por posição é frágil.
         const pdfRowMeta = new Map();
 
+        // Documentos que são controle interno do setor e NÃO devem aparecer no relatório
+        // exportado (que é enviado para outras pessoas/áreas). Continuam aparecendo
+        // normalmente na tela (modal do condutor).
+        const TAGS_OCULTAS_NO_RELATORIO = ['Criminal', 'Antecedentes'];
+        function docsPendentesRelatorio(r){
+          return (r.docsPendentes || []).filter(tag => !TAGS_OCULTAS_NO_RELATORIO.includes(tag));
+        }
+
         // "Tem pendência documental" = checklist de documentos pendentes (planilha de
         // documentação) OU DER/CNH vencido/sem cadastro — ou seja, não está "tudo certo".
         function temPendenciaDocumental(r){
-          return (r.docsPendentes && r.docsPendentes.length > 0)
+          return (docsPendentesRelatorio(r).length > 0)
             || r.derStatus === 'VENCIDO' || r.derStatus === 'SEM_CADASTRO'
             || r.cnhStatus === 'VENCIDO' || r.cnhStatus === 'SEM_CADASTRO';
         }
         // Lista de "tags" de pendência de um condutor: documentos do checklist + DER/CNH
         // vencido ou sem cadastro (rotulados igual ao badge que aparece na tela).
         function pendenciaTags(r){
-          const tags = (r.docsPendentes || []).slice();
+          const tags = docsPendentesRelatorio(r);
           if(r.derStatus === 'SEM_CADASTRO') tags.push('DER sem cadastro');
           else if(r.derStatus === 'VENCIDO') tags.push('DER vencido');
           if(r.cnhStatus === 'SEM_CADASTRO') tags.push('CNH sem cadastro');
@@ -1941,9 +1949,9 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
             // Motorista sem cadastro no DER (sem validade lançada) E com documentos pendentes:
             // troca as 4 colunas de DER/CNH por "Documentos pendentes" + "Observações" só
             // nessa linha (o relatório como um todo continua no formato de 7 colunas).
-            const semDerComPendencia = r.derStatus === 'SEM_CADASTRO' && r.docsPendentes && r.docsPendentes.length;
+            const semDerComPendencia = r.derStatus === 'SEM_CADASTRO' && docsPendentesRelatorio(r).length;
             if(semDerComPendencia){
-              const docsTxt = r.docsPendentes.join(', ');
+              const docsTxt = docsPendentesRelatorio(r).join(', ');
               const obsTxt = (r.docsObservacao || '').trim() || '—';
               row = [
                 r.motorista || '—',
