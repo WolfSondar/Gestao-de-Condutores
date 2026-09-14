@@ -1920,10 +1920,12 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
         }
         // Lista de "tags" de pendência de um condutor: documentos do checklist + DER/CNH
         // vencido ou sem cadastro (rotulados igual ao badge que aparece na tela).
+        // Obs: "DER vencido" não entra na lista — é informação redundante, já dá pra ver
+        // que o DER tá vencido pela validade/coloração; só "DER sem cadastro" entra, pois
+        // esse sim é uma pendência de fato (não dá pra saber se venceu sem o cadastro).
         function pendenciaTags(r){
           const tags = docsPendentesRelatorio(r);
           if(r.derStatus === 'SEM_CADASTRO') tags.push('DER sem cadastro');
-          else if(r.derStatus === 'VENCIDO') tags.push('DER vencido');
           if(r.cnhStatus === 'SEM_CADASTRO') tags.push('CNH sem cadastro');
           else if(r.cnhStatus === 'VENCIDO') tags.push('CNH vencida');
           return tags;
@@ -1937,7 +1939,11 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
           let row;
           if(modoPendencias){
             const tags = pendenciaTags(r);
-            if(!tags.length){
+            // Se não sobrou nenhuma tag mas o condutor só está aqui por causa do DER
+            // vencido (tag omitida de propósito), não é "tudo certo" — só não tem mais
+            // nada pra listar na coluna de documentos.
+            const derVencidoSemOutraPendencia = !tags.length && r.derStatus === 'VENCIDO';
+            if(!tags.length && !derVencidoSemOutraPendencia){
               // Salvaguarda: se por algum motivo esse condutor não tiver nenhuma pendência
               // (mesmo o relatório sendo "de pendências"), avisa que está tudo certo em vez
               // de deixar a linha em branco.
@@ -1948,7 +1954,7 @@ els.confSub.textContent = `Arquivo atualizado ${textoRelativo}`;
                 { content: 'TUDO CERTO', colSpan: 2, styles: { halign:'center', fontStyle:'bold', textColor:[43,173,125] } },
               ];
             } else {
-              const docsTxt = tags.join(', ');
+              const docsTxt = tags.length ? tags.join(', ') : '—';
               const obsTxt = (r.docsObservacao || '').trim() || '—';
               row = [
                 r.motorista || '—',
