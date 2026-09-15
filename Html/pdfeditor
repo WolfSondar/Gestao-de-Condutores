@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor de PDF Simples</title>
+    
+    <!-- Importando a biblioteca pdf-lib via CDN -->
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --hover-color: #0056b3;
+            --bg-color: #f4f7f6;
+            --container-bg: #ffffff;
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #222;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .coords {
+            display: flex;
+            gap: 10px;
+        }
+
+        .coords .form-group {
+            flex: 1;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Adicionar Texto ao PDF</h1>
+        
+        <div class="form-group">
+            <label for="pdfInput">Selecione o arquivo PDF:</label>
+            <input type="file" id="pdfInput" accept="application/pdf">
+        </div>
+
+        <div class="form-group">
+            <label for="textInput">Texto a inserir (ex: Data, Nome):</label>
+            <input type="text" id="textInput" placeholder="Ex: 15/09/2026">
+        </div>
+
+        <div class="coords">
+            <div class="form-group">
+                <label for="xInput">Posição X:</label>
+                <input type="number" id="xInput" value="100">
+                <span class="help-text">Esquerda p/ Direita</span>
+            </div>
+            <div class="form-group">
+                <label for="yInput">Posição Y:</label>
+                <input type="number" id="yInput" value="700">
+                <span class="help-text">Baixo p/ Cima</span>
+            </div>
+        </div>
+
+        <button id="processBtn">Gerar e Baixar PDF</button>
+    </div>
+
+    <script>
+        // Desestruturando a biblioteca pdf-lib que foi carregada via CDN
+        const { PDFDocument, rgb } = PDFLib;
+
+        document.getElementById('processBtn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('pdfInput');
+            const textInput = document.getElementById('textInput').value;
+            const xPos = parseInt(document.getElementById('xInput').value);
+            const yPos = parseInt(document.getElementById('yInput').value);
+
+            // Validações básicas
+            if (fileInput.files.length === 0) {
+                alert('Por favor, selecione um arquivo PDF.');
+                return;
+            }
+            if (!textInput) {
+                alert('Por favor, digite algum texto para inserir no PDF.');
+                return;
+            }
+
+            try {
+                const file = fileInput.files[0];
+                
+                // Transforma o arquivo em um ArrayBuffer para o pdf-lib ler
+                const arrayBuffer = await file.arrayBuffer();
+                
+                // Carrega o documento PDF
+                const pdfDoc = await PDFDocument.load(arrayBuffer);
+                
+                // Pega a primeira página do documento (índice 0)
+                const pages = pdfDoc.getPages();
+                const firstPage = pages[0];
+
+                // Desenha o texto na página com as coordenadas X e Y fornecidas
+                firstPage.drawText(textInput, {
+                    x: xPos,
+                    y: yPos,
+                    size: 12,
+                    color: rgb(0, 0, 0), // Cor preta
+                });
+
+                // Salva as modificações no PDF
+                const pdfBytes = await pdfDoc.save();
+
+                // Cria um Blob e um link temporário para forçar o download do arquivo
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Editado_' + file.name; // Nome do arquivo final
+                document.body.appendChild(a);
+                a.click(); // Simula o clique para baixar
+                document.body.removeChild(a); // Remove o link da tela
+                URL.revokeObjectURL(url); // Limpa a memória
+
+            } catch (error) {
+                console.error(error);
+                alert('Ocorreu um erro ao processar o PDF. Verifique o console para mais detalhes.');
+            }
+        });
+    </script>
+</body>
+</html>
