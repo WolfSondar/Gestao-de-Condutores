@@ -53,36 +53,26 @@ hr{border:0;border-top:1px solid var(--line);margin:18px 0}
 <body>
 <header>
   <div class="logo">📄 Editor de PDF</div>
-  <label class="file-btn primary">📂 Importar PDF<input id="fileInput" type="file" accept="application/pdf"></label>
-  <button id="addTextBtn">T Adicionar texto</button>
+  <input id="fileInput" type="file" accept="application/pdf" style="display:none">
   <button id="downloadBtn" class="primary" disabled>⬇ Baixar PDF</button>
 </header>
 
 <main>
 <aside class="sidebar">
   <h3>Ferramentas</h3>
-  <button class="tool" id="editBtn">✏️ Editar texto</button>
-  <button class="tool" id="deleteBtn">🗑️ Remover texto</button>
+  <button class="tool" id="undoBtn" disabled>↶ Desfazer</button>
+  <button class="tool" id="redoBtn" disabled>↷ Refazer</button>
   <button class="tool" id="zoomOut">− Zoom</button>
   <button class="tool" id="zoomIn">＋ Zoom</button>
   <button class="tool" id="resetZoom">↺ Restaurar zoom</button>
   <div class="status" id="status">Nenhum PDF carregado.</div>
-  <hr>
-  <h3>Como usar</h3>
-  <div class="help">
-    <b>Importar:</b> clique em “Importar PDF” ou arraste um PDF do seu computador para esta janela.<br><br>
-    <b>Editar:</b> clique em uma área de texto reconhecida e dê duplo clique para alterar.<br><br>
-    <b>Adicionar:</b> clique em “Adicionar texto” e depois no local desejado da página.<br><br>
-    <b>Baixar:</b> gere o PDF final pelo botão no topo.<br><br>
-    O PDF é processado no navegador. O texto original continua visível porque o documento é renderizado pelo próprio PDF; as áreas de seleção ficam invisíveis para evitar a sobreposição que ocorria antes.
-  </div>
 </aside>
 
 <section class="workspace" id="workspace">
   <div class="empty" id="empty">
     <div class="icon">📄</div>
     <h2>Arraste seu PDF para cá</h2>
-    <p>Ou use o botão <b>Importar PDF</b>. O arquivo não precisa ser enviado para um servidor.</p>
+    <p>Solte um arquivo PDF nesta janela. O arquivo não precisa ser enviado para um servidor.</p>
   </div>
   <div class="pages" id="pages"></div>
 </section>
@@ -123,7 +113,9 @@ const modal=document.getElementById("modal");
 const textValue=document.getElementById("textValue");
 
 let originalBytes=null,pdfDoc=null,scale=1.35,selected=null,adding=false;
+let originalFileName="documento.pdf";
 let pageData=[];
+let undoStack=[],redoStack=[];
 
 const status=t=>statusEl.textContent=t;
 
@@ -147,14 +139,61 @@ fileInput.addEventListener("change",e=>{
   }
 }));
 
+function snapshotState(){
+  return pageData.map(d=>({
+    n:d.n,
+    items:d.items.map(i=>({
+      n:i.n,original:i.original,text:i.text,x:i.x,y:i.y,width:i.width,
+      height:i.height,fontSize:i.fontSize,changed:!!i.changed,newItem:!!i.newItem,deleted:!!i.deleted
+    }))
+  }));
+}
+function updateHistoryButtons(){
+  document.getElementById("undoBtn").disabled=!undoStack.length;
+  document.getElementById("redoBtn").disabled=!redoStack.length;
+}
+function recordHistory(){
+  undoStack.push(snapshotState());
+  if(undoStack.length>50)undoStack.shift();
+  redoStack=[];
+  updateHistoryButtons();
+}
+async function restoreHistory(snapshot){
+  if(!snapshot)return;
+  const saved=new Map(snapshot.map(d=>[d.n,d]));
+  for(const data of pageData){
+    const s=saved.get(data.n);
+    if(!s)continue;
+    data.items.forEach(i=>{if(i.preview)i.preview.remove();});
+    data.items=s.items.map(i=>({...i}));
+  }
+  await renderAll();
+}
+async function undo(){
+  if(!undoStack.length)return;
+  redoStack.push(snapshotState());
+  const s=undoStack.pop();
+  await restoreHistory(s);
+  status("Alteração desfeita.");
+  updateHistoryButtons();
+}
+async function redo(){
+  if(!redoStack.length)return;
+  undoStack.push(snapshotState());
+  const s=redoStack.pop();
+  await restoreHistory(s);
+  status("Alteração refeita.");
+  updateHistoryButtons();
+}
 async function loadFile(file){
+  originalFileName=file.name||"documento.pdf";
   status("Carregando "+file.name+"…");
   try{
     originalBytes=new Uint8Array(await file.arrayBuffer());
     pdfDoc=await pdfjsLib.getDocument({data:originalBytes.slice()}).promise;
     empty.style.display="none";
     downloadBtn.disabled=false;
-    selected=null; pageData=[];
+    selected=null; pageData=[]; undoStack=[]; redoStack=[]; updateHistoryButtons();
     await renderAll();
     status(`${file.name} — ${pdfDoc.numPages} página(s).`);
   }catch(err){
@@ -248,43 +287,6 @@ function openEditor(item){
   textValue.focus();
 }
 
-document.getElementById("editBtn").onclick=()=>{
-  if(selected)openEditor(selected);
-  else status("Clique primeiro em um texto do PDF.");
-};
-
-document.getElementById("deleteBtn").onclick=()=>{
-  if(!selected){status("Selecione primeiro um texto.");return}
-  selected.deleted=true;
-  selected.hit.style.display="none";
-  removePreview(selected);
-  status("Texto marcado para remoção.");
-  selected=null;
-};
-
-document.getElementById("addTextBtn").onclick=()=>{
-  if(!pdfDoc){status("Importe um PDF primeiro.");return}
-  adding=true;
-  if(selected?.hit)selected.hit.classList.remove("selected");
-  selected=null;
-  status("Clique no ponto da página onde deseja adicionar o texto.");
-};
-
-function addNewText(data,x,y){
-  const item={n:data.n,original:"",text:"Novo texto",x,y,width:180,height:28,fontSize:16,changed:true,newItem:true,deleted:false};
-  const preview=document.createElement("div");
-  preview.className="preview-text new";
-  preview.style.left=x+"px";preview.style.top=y+"px";
-  preview.style.width="180px";preview.style.fontSize="16px";
-  preview.textContent=item.text;
-  preview.addEventListener("dblclick",()=>openEditor(item));
-  data.overlay.appendChild(preview);
-  item.preview=preview;
-  data.items.push(item);
-  selected=item; adding=false;
-  openEditor(item);
-}
-
 function removePreview(item){
   if(item.preview)item.preview.remove();
 }
@@ -292,6 +294,7 @@ function removePreview(item){
 document.getElementById("cancelModal").onclick=()=>modal.classList.remove("open");
 document.getElementById("saveModal").onclick=()=>{
   if(!selected)return;
+  if(selected.text!==textValue.value)recordHistory();
   selected.text=textValue.value;
   selected.changed=selected.text!==selected.original;
   if(selected.newItem){
@@ -319,6 +322,13 @@ function showChangedPreview(item){
   item.hit.parentElement.appendChild(p);
 }
 
+document.getElementById("undoBtn").onclick=undo;
+document.getElementById("redoBtn").onclick=redo;
+window.addEventListener("keydown",e=>{
+  if(!(e.ctrlKey||e.metaKey))return;
+  if(e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?redo():undo();}
+  else if(e.key.toLowerCase()==="y"){e.preventDefault();redo();}
+});
 document.getElementById("zoomIn").onclick=async()=>{
   if(!pdfDoc)return; scale=Math.min(3,scale+.15); await renderAll();
 };
@@ -378,7 +388,7 @@ downloadBtn.onclick=async()=>{
     const blob=new Blob([bytes],{type:"application/pdf"});
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
-    a.href=url;a.download="pdf-editado.pdf";
+    a.href=url;a.download=originalFileName||"documento.pdf";
     document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
     status("PDF baixado com sucesso.");
